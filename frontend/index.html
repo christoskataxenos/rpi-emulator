@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual Raspberry Pi Lab - Εικονικός Εξομοιωτής Raspberry Pi</title>
+    <meta name="description" content="Ένας πλήρης εικονικός εξομοιωτής Raspberry Pi με breadboard, εξαρτήματα και επεξεργαστή κώδικα Python για φοιτητές και χομπίστες.">
+    <!-- Google Fonts: Inter & JetBrains Mono για κώδικα -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons για όμορφα εικονίδια -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Κύριο αρχείο στυλ -->
+    <link rel="stylesheet" href="css/main.css">
+    <!-- Monaco Editor Loader από CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+</head>
+<body class="dark-theme">
+    <div id="app-container">
+        <!-- Κύριο Header της Εφαρμογής -->
+        <header id="main-header" class="glass-panel">
+            <div class="header-logo">
+                <i class="fa-brands fa-raspberry-pi rpi-logo-glow"></i>
+                <div class="logo-text">
+                    <h1>Virtual RPi Lab</h1>
+                    <span>Εκπαιδευτικός Εξομοιωτής GPIO</span>
+                </div>
+            </div>
+            
+            <div class="header-controls">
+                <div class="control-group">
+                    <label for="model-selector"><i class="fa-solid fa-microchip"></i> Μοντέλο:</label>
+                    <select id="model-selector" class="custom-select">
+                        <option value="pi4" selected>Raspberry Pi 4 Model B</option>
+                        <option value="pi3">Raspberry Pi 3 Model B+</option>
+                        <option value="pizero">Raspberry Pi Zero W</option>
+                        <option value="pico">Raspberry Pi Pico</option>
+                    </select>
+                </div>
+                
+                <div class="control-actions">
+                    <button id="btn-run" class="btn btn-success" title="Εκτέλεση κώδικα Python">
+                        <i class="fa-solid fa-play"></i> Run Code
+                    </button>
+                    <button id="btn-stop" class="btn btn-danger disabled" title="Διακοπή εκτέλεσης κώδικα" disabled>
+                        <i class="fa-solid fa-stop"></i> Stop
+                    </button>
+                    <button id="btn-clear" class="btn btn-secondary" title="Καθαρισμός κυκλώματος">
+                        <i class="fa-solid fa-trash-can"></i> Clear Grid
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Κύριο Περιεχόμενο της Εφαρμογής -->
+        <main id="main-content">
+            <!-- Αριστερή Στήλη: Εργαλειοθήκη Εξαρτημάτων -->
+            <aside id="sidebar-left" class="glass-panel">
+                <h2 class="sidebar-title"><i class="fa-solid fa-toolbox"></i> Εξαρτήματα</h2>
+                <div class="components-drawer">
+                    <div class="component-card draggable" draggable="true" data-type="LED" data-color="red">
+                        <div class="comp-icon led-icon red-led"></div>
+                        <div class="comp-info">
+                            <h3>LED (Κόκκινο)</h3>
+                            <p>Δίοδος Εκπομπής Φωτός (2.0V, 20mA)</p>
+                        </div>
+                    </div>
+                    <div class="component-card draggable" draggable="true" data-type="LED" data-color="green">
+                        <div class="comp-icon led-icon green-led"></div>
+                        <div class="comp-info">
+                            <h3>LED (Πράσινο)</h3>
+                            <p>Δίοδος Εκπομπής Φωτός (2.0V, 20mA)</p>
+                        </div>
+                    </div>
+                    <div class="component-card draggable" draggable="true" data-type="RESISTOR" data-resistance="330">
+                        <div class="comp-icon resistor-icon"></div>
+                        <div class="comp-info">
+                            <h3>Αντίσταση 330Ω</h3>
+                            <p>Για προστασία LED σε GPIO 3.3V</p>
+                        </div>
+                    </div>
+                    <div class="component-card draggable" draggable="true" data-type="RESISTOR" data-resistance="10000">
+                        <div class="comp-icon resistor-icon pull-res"></div>
+                        <div class="comp-info">
+                            <h3>Αντίσταση 10kΩ</h3>
+                            <p>Pull-up / Pull-down αντίσταση</p>
+                        </div>
+                    </div>
+                    <div class="component-card draggable" draggable="true" data-type="BUTTON">
+                        <div class="comp-icon button-icon"></div>
+                        <div class="comp-info">
+                            <h3>Κουμπί (Button)</h3>
+                            <p>Διακόπτης push-button εισόδου</p>
+                        </div>
+                    </div>
+                    <div class="component-card draggable" draggable="true" data-type="BUZZER">
+                        <div class="comp-icon buzzer-icon"></div>
+                        <div class="comp-info">
+                            <h3>Βομβητής (Buzzer)</h3>
+                            <p>Ηχητικός βομβητής (5V / 3.3V)</p>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Κεντρική Περιοχή: Πλακέτα (Breadboard) & Επεξεργαστής Κώδικα (Editor) -->
+            <section id="workspace-center">
+                <!-- Πάνω Μέρος: Εικονική Πλακέτα Σύνδεσης -->
+                <div id="breadboard-panel" class="glass-panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-circle-nodes"></i> Σχεδιασμός Κυκλώματος (Breadboard View)</h2>
+                        <div class="wire-color-picker">
+                            <label>Χρώμα Καλωδίου:</label>
+                            <span class="color-dot active" data-color="#ff0000" style="background-color: #ff0000;"></span>
+                            <span class="color-dot" data-color="#0000ff" style="background-color: #0000ff;"></span>
+                            <span class="color-dot" data-color="#00ff00" style="background-color: #00ff00;"></span>
+                            <span class="color-dot" data-color="#000000" style="background-color: #000000;"></span>
+                            <span class="color-dot" data-color="#ffcc00" style="background-color: #ffcc00;"></span>
+                        </div>
+                    </div>
+                    <div id="canvas-container">
+                        <!-- Canvas για τη σχεδίαση της πλακέτας, RPi και καλωδίων -->
+                        <canvas id="circuit-canvas"></canvas>
+                    </div>
+                </div>
+
+                <!-- Κάτω Μέρος: Monaco Code Editor -->
+                <div id="editor-panel" class="glass-panel">
+                    <div class="panel-header">
+                        <h2><i class="fa-solid fa-code"></i> Επεξεργαστής Κώδικα Python</h2>
+                        <div class="editor-actions">
+                            <button id="btn-reset-code" class="btn-icon" title="Επαναφορά αρχικού κώδικα"><i class="fa-solid fa-rotate-left"></i></button>
+                        </div>
+                    </div>
+                    <div id="code-editor-container"></div>
+                </div>
+            </section>
+
+            <!-- Δεξιά Στήλη: Σενάρια / Μαθήματα -->
+            <aside id="sidebar-right" class="glass-panel">
+                <h2 class="sidebar-title"><i class="fa-solid fa-graduation-cap"></i> Εκπαιδευτικά Σενάρια</h2>
+                <div class="scenarios-list">
+                    <div class="scenario-item active" data-scenario="01_blink_led">
+                        <div class="scenario-num">01</div>
+                        <div class="scenario-info">
+                            <h3>Αναβόσβημα LED</h3>
+                            <span class="difficulty-tag easy">Εύκολο</span>
+                        </div>
+                    </div>
+                    <div class="scenario-item" data-scenario="02_button_input">
+                        <div class="scenario-num">02</div>
+                        <div class="scenario-info">
+                            <h3>Ανίχνευση Εισόδου</h3>
+                            <span class="difficulty-tag medium">Μεσαίο</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="tutorial-content-panel">
+                    <div id="tutorial-text">
+                        <!-- Εδώ θα φορτώνεται το κείμενο του README.md του σεναρίου -->
+                        <p class="select-prompt">Επιλέξτε ένα σενάριο από την παραπάνω λίστα για να ξεκινήσετε το μάθημα.</p>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Κάτω Μέρος: GPIO Monitor & Κονσόλα -->
+        <footer id="bottom-bar">
+            <!-- GPIO Pins Monitor Panel -->
+            <div id="gpio-monitor-panel" class="glass-panel">
+                <h2 class="panel-title"><i class="fa-solid fa-circle-info"></i> GPIO Live Monitor (40-Pin Header)</h2>
+                <div class="gpio-grid-container">
+                    <div class="gpio-column" id="gpio-left-col">
+                        <!-- Pins 1, 3, 5, ..., 39 -->
+                    </div>
+                    <div class="gpio-middle-spacer">
+                        <div class="pin-notch"></div>
+                    </div>
+                    <div class="gpio-column" id="gpio-right-col">
+                        <!-- Pins 2, 4, 6, ..., 40 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terminal / Console Output Panel -->
+            <div id="terminal-panel" class="glass-panel">
+                <div class="panel-header">
+                    <h2><i class="fa-solid fa-terminal"></i> Κονσόλα Εξόδου & Σφάλματα</h2>
+                    <button id="btn-clear-console" class="btn btn-small" title="Καθαρισμός κονσόλας">Clear</button>
+                </div>
+                <div id="console-output">
+                    <div class="log-line system-log">Καλώς ορίσατε στο Virtual RPi Lab. Ο εξομοιωτής είναι έτοιμος.</div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Φόρτωση των Javascript αρχείων της εφαρμογής -->
+    <script src="js/websocket.js"></script>
+    <script src="js/console.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/wiring.js"></script>
+    <script src="js/breadboard.js"></script>
+    <script src="js/editor.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
