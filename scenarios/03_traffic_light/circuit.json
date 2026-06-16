@@ -1,0 +1,24 @@
+{
+  "components": [
+    {"id": "RPI", "type": "RPI"},
+    {"id": "LED_R", "type": "LED", "properties": {"color": "red", "x": 450, "y": 150}},
+    {"id": "LED_Y", "type": "LED", "properties": {"color": "yellow", "x": 450, "y": 230}},
+    {"id": "LED_G", "type": "LED", "properties": {"color": "green", "x": 450, "y": 310}},
+    {"id": "R_R", "type": "RESISTOR", "properties": {"resistance": 330, "x": 550, "y": 150}},
+    {"id": "R_Y", "type": "RESISTOR", "properties": {"resistance": 330, "x": 550, "y": 230}},
+    {"id": "R_G", "type": "RESISTOR", "properties": {"resistance": 330, "x": 550, "y": 310}}
+  ],
+  "wires": [
+    {"from_component": "RPI", "from_terminal": "pin11", "to_component": "R_R", "to_terminal": "terminal_a", "color": "orange"},
+    {"from_component": "R_R", "from_terminal": "terminal_b", "to_component": "LED_R", "to_terminal": "anode", "color": "red"},
+    {"from_component": "LED_R", "from_terminal": "cathode", "to_component": "RPI", "to_terminal": "pin6", "color": "black"},
+
+    {"from_component": "RPI", "from_terminal": "pin13", "to_component": "R_Y", "to_terminal": "terminal_a", "color": "orange"},
+    {"from_component": "R_Y", "from_terminal": "terminal_b", "to_component": "LED_Y", "to_terminal": "anode", "color": "yellow"},
+    {"from_component": "LED_Y", "from_terminal": "cathode", "to_component": "RPI", "to_terminal": "pin14", "color": "black"},
+
+    {"from_component": "RPI", "from_terminal": "pin15", "to_component": "R_G", "to_terminal": "terminal_a", "color": "orange"},
+    {"from_component": "R_G", "from_terminal": "terminal_b", "to_component": "LED_G", "to_terminal": "anode", "color": "green"},
+    {"from_component": "LED_G", "from_terminal": "cathode", "to_component": "RPI", "to_terminal": "pin20", "color": "black"}
+  ]
+}

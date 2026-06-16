@@ -14,7 +14,7 @@
     <!-- Κύριο αρχείο στυλ -->
     <link rel="stylesheet" href="css/main.css">
     <!-- Monaco Editor Loader από CDN -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.js"></script>
 </head>
 <body class="light-theme">
     <div id="app-container">
@@ -153,21 +153,9 @@
                     <span><i class="fa-solid fa-graduation-cap"></i> Εκπαιδευτικά Σενάρια</span>
                     <button id="toggle-sidebar-right" class="panel-toggle-btn" title="Απόκρυψη Σεναρίων"><i class="fa-solid fa-chevron-right"></i></button>
                 </h2>
-                <div class="scenarios-list">
-                    <div class="scenario-item active" data-scenario="01_blink_led">
-                        <div class="scenario-num">01</div>
-                        <div class="scenario-info">
-                            <h3>Αναβόσβημα LED</h3>
-                            <span class="difficulty-tag easy">Εύκολο</span>
-                        </div>
-                    </div>
-                    <div class="scenario-item" data-scenario="02_button_input">
-                        <div class="scenario-num">02</div>
-                        <div class="scenario-info">
-                            <h3>Ανίχνευση Εισόδου</h3>
-                            <span class="difficulty-tag medium">Μεσαίο</span>
-                        </div>
-                    </div>
+                <div class="scenarios-list" id="scenarios-list-container">
+                    <!-- Τα σενάρια φορτώνονται δυναμικά από το app.js -->
+                    <div style="padding: 15px; text-align: center; color: var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin"></i> Φόρτωση σεναρίων...</div>
                 </div>
                 
                 <div id="tutorial-content-panel">

@@ -1,3 +1,6 @@
+import collections
+from backend.simulator.gpio_state import LogicState
+
 # Κλάση που αναπαριστά μια σύνδεση (καλώδιο) μεταξύ δύο ακροδεκτών
 class Wire:
     def __init__(self, from_component: str, from_terminal: str, to_component: str, to_terminal: str, color: str = "#ff0000"):
@@ -11,6 +14,8 @@ class Wire:
         self.to_terminal = to_terminal
         # Το χρώμα του καλωδίου για οπτική αναπαράσταση
         self.color = color
+        # 4-State logic: Η λογική κατάσταση που μεταφέρει το καλώδιο
+        self.state = LogicState.HIGH_Z
 
     def to_dict(self) -> dict:
         return {
@@ -18,7 +23,8 @@ class Wire:
             "from_terminal": self.from_terminal,
             "to_component": self.to_component,
             "to_terminal": self.to_terminal,
-            "color": self.color
+            "color": self.color,
+            "state": self.state.name
         }
 
 
@@ -33,6 +39,8 @@ class Component:
         self.properties = properties or {}
         # Οι ακροδέκτες του εξαρτήματος
         self.terminals = self._init_terminals()
+        # Η τρέχουσα κατάσταση κάθε ακροδέκτη
+        self.terminal_states = {t: LogicState.HIGH_Z for t in self.terminals}
 
     # Βοηθητική μέθοδος για τον ορισμό των ακροδεκτών ανάλογα με τον τύπο
     def _init_terminals(self) -> list:
@@ -54,7 +62,8 @@ class Component:
             "id": self.id,
             "type": self.type,
             "properties": self.properties,
-            "terminals": self.terminals
+            "terminals": self.terminals,
+            "terminal_states": {k: v.name for k, v in self.terminal_states.items()}
         }
 
 
@@ -66,8 +75,15 @@ class CircuitManager:
         # Λίστα με όλα τα καλώδια
         self.wires = []
         
+        # Ουρά γεγονότων (Event Queue) για τον αλγόριθμο propagation
+        self.event_queue = collections.deque()
+        
         # Προσθήκη του ίδιου του Raspberry Pi ως βασικό εξάρτημα
         self.add_component("RPI", "RPI")
+
+    # Μέθοδος προσθήκης γεγονότος στην ουρά
+    def schedule_event(self, comp_id: str, terminal: str, new_state: LogicState):
+        self.event_queue.append((comp_id, terminal, new_state))
 
     # Μέθοδος προσθήκης εξαρτήματος
     def add_component(self, comp_id: str, comp_type: str, properties: dict = None) -> bool:
@@ -121,6 +137,7 @@ class CircuitManager:
     def clear_circuit(self):
         self.components = {"RPI": Component("RPI", "RPI")}
         self.wires = []
+        self.event_queue.clear()
 
     def get_circuit_data(self) -> dict:
         return {

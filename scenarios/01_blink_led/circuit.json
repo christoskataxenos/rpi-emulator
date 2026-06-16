@@ -1,8 +1,8 @@
 {
   "components": [
     {"id": "RPI", "type": "RPI"},
-    {"id": "LED1", "type": "LED", "properties": {"color": "red"}},
-    {"id": "R1", "type": "RESISTOR", "properties": {"resistance": 330}}
+    {"id": "LED1", "type": "LED", "properties": {"color": "red", "x": 450, "y": 180}},
+    {"id": "R1", "type": "RESISTOR", "properties": {"resistance": 330, "x": 550, "y": 180}}
   ],
   "wires": [
     {"from_component": "RPI", "from_terminal": "pin11", "to_component": "R1", "to_terminal": "terminal_a", "color": "orange"},

@@ -4,10 +4,28 @@ const CodeEditorManager = {
     pending_code: null,
 
     init() {
-        // Ρύθμιση του RequireJS για φόρτωση του Monaco Editor από το CDN
+        // Έλεγχος αν ο loader του Monaco (require) είναι διαθέσιμος (π.χ. αν είμαστε offline)
+        if (typeof require === "undefined") {
+            ConsoleLogger.stderr("Ο loader του Monaco Editor δεν είναι διαθέσιμος. Ενεργοποίηση offline λειτουργίας.");
+            this.setup_fallback_editor();
+            return;
+        }
+
+        // Ρύθμιση του Monaco Editor Loader για φόρτωση από το CDN
         require.config({ paths: { vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs" } });
         
+        // Ορισμός χρονικού ορίου 5 δευτερολέπτων για τη φόρτωση του Monaco Editor
+        const timeout = setTimeout(() => {
+            if (!this.editor) {
+                ConsoleLogger.stderr("Η φόρτωση του Monaco Editor καθυστερεί ή απέτυχε. Μετάβαση σε απλό επεξεργαστή κειμένου.");
+                this.setup_fallback_editor();
+            }
+        }, 5000);
+
         require(["vs/editor/editor.main"], () => {
+            clearTimeout(timeout);
+            if (this.editor) return; // Έχει ήδη ενεργοποιηθεί ο fallback editor
+
             // Ορισμός του θέματος VS Code Light
             monaco.editor.defineTheme("rpi-dark-theme", {
                 base: "vs",
@@ -49,6 +67,47 @@ const CodeEditorManager = {
                 App.set_workspace_mode("circuit");
             }, 100);
         });
+    },
+
+    // Ρύθμιση απλού textarea σε περίπτωση σφάλματος φόρτωσης/offline
+    setup_fallback_editor() {
+        const container = document.getElementById("code-editor-container");
+        if (!container) return;
+
+        container.innerHTML = `
+            <textarea id="fallback-textarea" style="
+                width: 100%;
+                height: 100%;
+                box-sizing: border-box;
+                resize: none;
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 13px;
+                padding: 10px;
+                border: none;
+                background: #f5f7fa;
+                color: #333;
+                outline: none;
+            " placeholder="# Γράψτε τον κώδικα Python σας εδώ..."></textarea>
+        `;
+
+        this.editor = {
+            getValue: () => document.getElementById("fallback-textarea").value,
+            setValue: (val) => {
+                const ta = document.getElementById("fallback-textarea");
+                if (ta) ta.value = val;
+            }
+        };
+
+        // Φόρτωση του εκκρεμούς κώδικα αν υπάρχει
+        if (this.pending_code) {
+            this.set_code(this.pending_code);
+            this.pending_code = null;
+        }
+
+        // Αρχικοποίηση layout
+        setTimeout(() => {
+            App.set_workspace_mode("circuit");
+        }, 100);
     },
 
     // Λήψη του κώδικα από τον editor

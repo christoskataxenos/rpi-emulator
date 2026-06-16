@@ -2,14 +2,19 @@
   "components": [
     {"id": "RPI", "type": "RPI"},
     {"id": "BTN1", "type": "BUTTON", "properties": {"x": 450, "y": 300}},
+    {"id": "BUZ1", "type": "BUZZER", "properties": {"x": 650, "y": 300}},
     {"id": "LED1", "type": "LED", "properties": {"color": "red", "x": 450, "y": 180}},
     {"id": "R1", "type": "RESISTOR", "properties": {"resistance": 330, "x": 550, "y": 180}}
   ],
   "wires": [
     {"from_component": "RPI", "from_terminal": "pin1", "to_component": "BTN1", "to_terminal": "terminal_a", "color": "red"},
     {"from_component": "BTN1", "from_terminal": "terminal_b", "to_component": "RPI", "to_terminal": "pin12", "color": "blue"},
+
     {"from_component": "RPI", "from_terminal": "pin11", "to_component": "R1", "to_terminal": "terminal_a", "color": "orange"},
     {"from_component": "R1", "from_terminal": "terminal_b", "to_component": "LED1", "to_terminal": "anode", "color": "red"},
-    {"from_component": "LED1", "from_terminal": "cathode", "to_component": "RPI", "to_terminal": "pin6", "color": "black"}
+    {"from_component": "LED1", "from_terminal": "cathode", "to_component": "RPI", "to_terminal": "pin6", "color": "black"},
+
+    {"from_component": "RPI", "from_terminal": "pin16", "to_component": "BUZ1", "to_terminal": "positive", "color": "yellow"},
+    {"from_component": "BUZ1", "from_terminal": "negative", "to_component": "RPI", "to_terminal": "pin14", "color": "black"}
   ]
 }

@@ -1,3 +1,11 @@
+from enum import Enum
+
+class LogicState(Enum):
+    LOW = 0
+    HIGH = 1
+    HIGH_Z = 2
+    ERROR = 3
+
 # Κλάση που αναπαριστά την κατάσταση ενός συγκεκριμένου pin του Raspberry Pi
 class GPIOPin:
     def __init__(self, pin_number: int):
@@ -7,8 +15,8 @@ class GPIOPin:
         # Η λειτουργία του pin: "INPUT" ή "OUTPUT"
         self.mode = "INPUT"
         
-        # Η τιμή της κατάστασης: 0 (LOW) ή 1 (HIGH)
-        self.state = 0
+        # Η τιμή της κατάστασης: LOW, HIGH, HIGH_Z, ERROR
+        self.state = LogicState.HIGH_Z
         
         # Ρύθμιση pull-up/pull-down αντίστασης: "UP", "DOWN" ή "NONE"
         self.pull = "NONE"
@@ -27,7 +35,7 @@ class GPIOPin:
         return {
             "pin_number": self.pin_number,
             "mode": self.mode,
-            "state": self.state,
+            "state": self.state.name,
             "pull": self.pull,
             "is_pwm": self.is_pwm,
             "pwm_duty_cycle": self.pwm_duty_cycle,
@@ -48,18 +56,20 @@ class GPIORegistry:
     def set_pin_mode(self, pin_number: int, mode: str):
         if pin_number in self.pins:
             self.pins[pin_number].mode = mode
+            if mode == "INPUT":
+                self.pins[pin_number].state = LogicState.HIGH_Z
 
-    # Μέθοδος για τον ορισμό της κατάστασης ενός pin (HIGH/LOW)
-    def set_pin_state(self, pin_number: int, state: int):
+    # Μέθοδος για τον ορισμό της κατάστασης ενός pin
+    def set_pin_state(self, pin_number: int, state: LogicState):
         if pin_number in self.pins:
             # Ενημερώνουμε την κατάσταση του pin
             self.pins[pin_number].state = state
 
     # Μέθοδος για τη λήψη της τρέχουσας κατάστασης ενός pin
-    def get_pin_state(self, pin_number: int) -> int:
+    def get_pin_state(self, pin_number: int) -> LogicState:
         if pin_number in self.pins:
             return self.pins[pin_number].state
-        return 0
+        return LogicState.HIGH_Z
 
     # Μέθοδος για τον ορισμό των ρυθμίσεων PWM
     def set_pin_pwm(self, pin_number: int, is_pwm: bool, duty_cycle: float = 0.0, frequency: float = 0.0):
@@ -72,6 +82,11 @@ class GPIORegistry:
     def set_pin_pull(self, pin_number: int, pull: str):
         if pin_number in self.pins:
             self.pins[pin_number].pull = pull
+            if self.pins[pin_number].mode == "INPUT" and self.pins[pin_number].state == LogicState.HIGH_Z:
+                if pull == "PUD_UP":
+                    self.pins[pin_number].state = LogicState.HIGH
+                elif pull == "PUD_DOWN":
+                    self.pins[pin_number].state = LogicState.LOW
 
     # Μέθοδος για τη λήψη των καταστάσεων όλων των pins σε μορφή λίστας από λεξικά
     def get_all_states(self) -> list:

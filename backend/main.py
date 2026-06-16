@@ -88,10 +88,10 @@ class CodeRunModel(BaseModel):
     code: str
 
 
+# Μοντέλο για τη μαζική φόρτωση του κυκλώματος (εξαρτήματα και καλώδια)
 class CircuitLoadModel(BaseModel):
     components: List[ComponentModel]
     wires: List[WireModel]
-
 
 
 # Βοηθητική συνάρτηση για την αποστολή μηνύματος σε όλα τα συνδεδεμένα WebSockets
@@ -295,7 +295,6 @@ async def load_circuit(data: CircuitLoadModel):
         "circuit": circuit_manager.get_circuit_data(),
         "solve_results": solve_results
     }
-
 
 
 @app.get("/api/circuit")

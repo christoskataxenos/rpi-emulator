@@ -1,48 +1,100 @@
-# Εισαγωγή του pytest και των κλάσεων προς δοκιμή
 import pytest
-from backend.simulator.gpio_state import GPIORegistry, GPIOPin
-
+from backend.simulator.gpio_state import GPIORegistry, GPIOPin, LogicState
+from backend.simulator.circuit import CircuitManager
+from backend.simulator.physics import PhysicsEngine
 
 # 1. Επιτυχές Unit Test (Passing Test)
-# Ελέγχει ότι η αρχικοποίηση και ο ορισμός τιμών στα GPIO pins λειτουργεί σωστά
 def test_gpio_registry_set_get():
-    # Δημιουργία καταχωρητή pins
     registry = GPIORegistry()
-    
-    # Επιλογή του pin 17 (αντιστοιχεί στο GPIO 17)
     pin_number = 17
     
-    # Έλεγχος ότι η αρχική κατάσταση είναι INPUT και η τιμή είναι 0
     assert registry.pins[pin_number].mode == "INPUT"
-    assert registry.get_pin_state(pin_number) == 0
+    assert registry.get_pin_state(pin_number) == LogicState.HIGH_Z
     
-    # Αλλαγή της λειτουργίας σε OUTPUT
     registry.set_pin_mode(pin_number, "OUTPUT")
     assert registry.pins[pin_number].mode == "OUTPUT"
     
-    # Ορισμός της κατάστασης σε HIGH (1)
-    registry.set_pin_state(pin_number, 1)
-    assert registry.get_pin_state(pin_number) == 1
+    registry.set_pin_state(pin_number, LogicState.HIGH)
+    assert registry.get_pin_state(pin_number) == LogicState.HIGH
     
-    # Ορισμός της κατάστασης σε LOW (0)
-    registry.set_pin_state(pin_number, 0)
-    assert registry.get_pin_state(pin_number) == 0
+    registry.set_pin_state(pin_number, LogicState.LOW)
+    assert registry.get_pin_state(pin_number) == LogicState.LOW
 
-
-# 2. Οριακό Σφάλμα (Failing Edge Case Test - Σηματοδοτείται ως αναμενόμενη αποτυχία ή skip αν λείπει η παραμετροποίηση)
-# Ελέγχει τη συμπεριφορά όταν προσπαθούμε να προσπελάσουμε ένα μη υπαρκτό pin (π.χ. pin 99)
+# 2. Οριακό Σφάλμα
 def test_gpio_invalid_pin_edge_case():
     registry = GPIORegistry()
     invalid_pin = 99
     
-    # Αναμένουμε ότι η προσπάθεια λήψης κατάστασης μη υπαρκτού pin θα επιστρέψει 0 και δεν θα προκαλέσει κατάρρευση
     state = registry.get_pin_state(invalid_pin)
-    assert state == 0
+    assert state == LogicState.HIGH_Z
     
-    # Αναμένουμε ότι η προσπάθεια ορισμού κατάστασης σε μη υπαρκτό pin δεν θα προκαλέσει KeyError
-    # Αυτό ελέγχει την ανθεκτικότητα του κώδικα (robustness)
     try:
-        registry.set_pin_state(invalid_pin, 1)
+        registry.set_pin_state(invalid_pin, LogicState.HIGH)
         registry.set_pin_mode(invalid_pin, "OUTPUT")
     except KeyError:
         pytest.fail("Η εφαρμογή κατέρρευσε με KeyError για μη έγκυρο pin!")
+
+# 3. Δοκιμή 4-State Logic (Logisim propagation)
+def test_physics_engine_short_circuit():
+    circuit = CircuitManager()
+    physics = PhysicsEngine(registry=GPIORegistry())
+    
+    # Βραχυκύκλωμα: 5V (pin 2) κατευθείαν σε GND (pin 6)
+    circuit.add_wire("RPI", "pin2", "RPI", "pin6")
+    
+    res = physics.solve_circuit(circuit)
+    
+    # Πρέπει να υπάρχει προειδοποίηση για SHORT_CIRCUIT
+    warnings = res["warnings"]
+    assert len(warnings) > 0
+    assert any(w["type"] == "SHORT_CIRCUIT" for w in warnings)
+
+def test_physics_engine_led():
+    circuit = CircuitManager()
+    physics = PhysicsEngine(registry=GPIORegistry())
+    
+    # Προσθήκη LED
+    circuit.add_component("LED1", "LED")
+    
+    # Σύνδεση LED: Anode -> 5V (pin 2), Cathode -> GND (pin 6)
+    circuit.add_wire("RPI", "pin2", "LED1", "anode")
+    circuit.add_wire("RPI", "pin6", "LED1", "cathode")
+    
+    res = physics.solve_circuit(circuit)
+    
+    # Το LED πρέπει να είναι lit
+    states = res["component_states"]
+    assert states["LED1"] == "lit"
+
+
+# 4. Έλεγχος της νέας REST API κλήσης μαζικής φόρτωσης κυκλώματος
+def test_api_load_circuit():
+    from fastapi.testclient import TestClient
+    from backend.main import app
+    
+    client = TestClient(app)
+    
+    # Δεδομένα κυκλώματος για δοκιμή
+    payload = {
+        "components": [
+            {"id": "LED1", "type": "LED", "properties": {"color": "red", "x": 450, "y": 180}},
+            {"id": "R1", "type": "RESISTOR", "properties": {"resistance": 330, "x": 550, "y": 180}}
+        ],
+        "wires": [
+            {"from_component": "RPI", "from_terminal": "pin11", "to_component": "R1", "to_terminal": "terminal_a", "color": "orange"},
+            {"from_component": "R1", "from_terminal": "terminal_b", "to_component": "LED1", "to_terminal": "anode", "color": "red"},
+            {"from_component": "LED1", "from_terminal": "cathode", "to_component": "RPI", "to_terminal": "pin6", "color": "black"}
+        ]
+    }
+    
+    response = client.post("/api/circuit/load", json = payload)
+    assert response.status_code == 200
+    
+    res_data = response.json()
+    assert res_data["status"] == "success"
+    
+    # Επιβεβαίωση ότι τα εξαρτήματα προστέθηκαν σωστά
+    components = res_data["circuit"]["components"]
+    assert any(c["id"] == "LED1" for c in components)
+    assert any(c["id"] == "R1" for c in components)
+

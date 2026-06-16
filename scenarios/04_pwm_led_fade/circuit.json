@@ -1,0 +1,12 @@
+{
+  "components": [
+    {"id": "RPI", "type": "RPI"},
+    {"id": "LED1", "type": "LED", "properties": {"color": "blue", "x": 450, "y": 180}},
+    {"id": "R1", "type": "RESISTOR", "properties": {"resistance": 330, "x": 550, "y": 180}}
+  ],
+  "wires": [
+    {"from_component": "RPI", "from_terminal": "pin12", "to_component": "R1", "to_terminal": "terminal_a", "color": "orange"},
+    {"from_component": "R1", "from_terminal": "terminal_b", "to_component": "LED1", "to_terminal": "anode", "color": "blue"},
+    {"from_component": "LED1", "from_terminal": "cathode", "to_component": "RPI", "to_terminal": "pin6", "color": "black"}
+  ]
+}
