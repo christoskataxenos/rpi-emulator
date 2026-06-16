@@ -39,14 +39,17 @@ BOARD_TO_BCM = {
 }
 
 
-# Βοηθητική συνάρτηση για τη μετατροπή του pin σύμφωνα με το mode (BCM ή BOARD)
+BCM_TO_BOARD = {bcm: board for board, bcm in BOARD_TO_BCM.items()}
+
+
+# Βοηθητική συνάρτηση για τη μετατροπή του pin σύμφωνα με το mode (BCM ή BOARD) σε φυσικό pin (BOARD)
 def _translate_pin(pin: int) -> int:
     global current_mode
-    if current_mode == BOARD:
-        if pin in BOARD_TO_BCM:
-            return BOARD_TO_BCM[pin]
+    if current_mode == BCM:
+        if pin in BCM_TO_BOARD:
+            return BCM_TO_BOARD[pin]
         else:
-            raise ValueError(f"Το pin {pin} δεν είναι έγκυρο GPIO pin στο BOARD mode.")
+            raise ValueError(f"Το BCM pin {pin} δεν είναι έγκυρο GPIO pin.")
     return pin
 
 
