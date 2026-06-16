@@ -9,8 +9,8 @@ import time
 BOARD = "BOARD"
 BCM = "BCM"
 
-OUT = "OUT"
-IN = "IN"
+OUT = "OUTPUT"
+IN = "INPUT"
 
 HIGH = 1
 LOW = 0
