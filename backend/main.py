@@ -2,6 +2,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import asyncio
 import json
@@ -361,3 +362,7 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception:
         if websocket in active_sockets:
             active_sockets.remove(websocket)
+
+# Προσάρτηση των στατικών αρχείων του frontend για την εξυπηρέτηση του web UI
+frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
+app.mount("/", StaticFiles(directory = frontend_dir, html = True), name = "static")
