@@ -255,27 +255,31 @@ async def get_circuit():
 # REST Endpoint: Εκτέλεση κώδικα Python
 @app.post("/api/execute")
 async def execute_code(data: CodeRunModel):
+    # Λήψη του τρέχοντος event loop από το κύριο thread
+    loop = asyncio.get_running_loop()
+
     # Callback για την προώθηση των logs εκτύπωσης (print) στο frontend
     def handle_output(stream_type: str, line: str):
-        # Δημιουργούμε async loop task για να στείλουμε το μήνυμα μέσω WebSocket
+        # Δημιουργούμε async loop task χρησιμοποιώντας το loop του κυρίου thread
         asyncio.run_coroutine_threadsafe(
             broadcast_message({
                 "type": "console_log",
                 "stream": stream_type,
                 "text": line
             }),
-            asyncio.get_event_loop()
+            loop
         )
 
     # Callback όταν η διεργασία τερματίσει
     def handle_exit(session_id: str, exit_code: int):
+        # Δημιουργούμε async loop task χρησιμοποιώντας το loop του κυρίου thread
         asyncio.run_coroutine_threadsafe(
             broadcast_message({
                 "type": "execution_finished",
                 "session_id": session_id,
                 "exit_code": exit_code
             }),
-            asyncio.get_event_loop()
+            loop
         )
 
     session_id = code_executor.run_code(data.code, handle_output, handle_exit)

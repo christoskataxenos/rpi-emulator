@@ -50,6 +50,11 @@ def _translate_pin(pin: int) -> int:
     return pin
 
 
+# Συνάρτηση για την απενεργοποίηση ή ενεργοποίηση προειδοποιήσεων (no-op στο shim)
+def setwarnings(state: bool):
+    pass
+
+
 # Συνάρτηση για τον ορισμό του συστήματος αρίθμησης των pins (BCM ή BOARD)
 def setmode(mode: str):
     global current_mode

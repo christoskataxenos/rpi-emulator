@@ -68,6 +68,12 @@ const BreadboardCanvas = {
         const container = this.canvas.parentElement;
         this.canvas.width = container.clientWidth;
         this.canvas.height = container.clientHeight;
+        
+        // Dynamic fit to screen
+        this.rpi_layout.y = 15;
+        this.rpi_layout.height = this.canvas.height - 30;
+        this.rpi_layout.width = 160;
+        this.rpi_layout.x = 20;
     },
 
     // Υπολογισμός των συντεταγμένων των 40 pins του Pi
@@ -78,9 +84,9 @@ const BreadboardCanvas = {
         const spacing_y = (rpi.height - 80) / (pin_rows - 1);
         
         // Row 1 (Αριστερή στήλη - Pins 1, 3, 5...)
-        const col1_x = rpi.x + 60;
+        const col1_x = rpi.x + 50;
         // Row 2 (Δεξιά στήλη - Pins 2, 4, 6...)
-        const col2_x = rpi.x + 90;
+        const col2_x = rpi.x + 80;
 
         for (let i = 0; i < this.rpi_pin_definitions.length; i++) {
             const def = this.rpi_pin_definitions[i];
@@ -216,6 +222,69 @@ const BreadboardCanvas = {
         
         // Έλεγχος αν το ποντίκι είναι πάνω από κάποιο terminal (hover effect)
         this.hovered_terminal = this.get_terminal_at(x, y);
+        this.update_tooltip(event);
+    },
+
+    // Ενημέρωση και εμφάνιση του tooltip με πληροφορίες για το pin
+    update_tooltip(event) {
+        const tooltip = document.getElementById("pin-details-tooltip");
+        if (!tooltip) return;
+
+        if (this.hovered_terminal && this.hovered_terminal.comp_id === "RPI") {
+            const pin_num = parseInt(this.hovered_terminal.name.replace("pin", ""));
+            const pin_def = this.rpi_pin_definitions[pin_num - 1];
+            
+            // Get state info if available
+            const pin_data = (window.App && window.App.pins_data) ? window.App.pins_data[pin_num] : null;
+            const mode = pin_data ? pin_data.mode : pin_def.type;
+            const state = pin_data ? pin_data.state : 0;
+
+            let type_greek = "GPIO (Γενική Είσοδος/Έξοδος)";
+            let status_class = "status-low";
+            let state_text = "LOW (0V)";
+
+            if (pin_def.type === "VCC5") {
+                type_greek = "Τροφοδοσία 5V";
+                status_class = "status-vcc";
+                state_text = "5V";
+            } else if (pin_def.type === "VCC3") {
+                type_greek = "Τροφοδοσία 3.3V";
+                status_class = "status-vcc";
+                state_text = "3.3V";
+            } else if (pin_def.type === "GND") {
+                type_greek = "Γείωση (Ground)";
+                status_class = "status-low";
+                state_text = "0V";
+            } else {
+                if (state === 1) {
+                    status_class = "status-high";
+                    state_text = "HIGH (3.3V)";
+                }
+            }
+
+            tooltip.innerHTML = `
+                <div class="tooltip-title">Pin ${pin_num}: ${pin_def.name}</div>
+                <div class="tooltip-detail"><strong>Τύπος:</strong> ${type_greek}</div>
+                <div class="tooltip-detail"><strong>Κατάσταση:</strong> ${mode}</div>
+                <div class="tooltip-status ${status_class}">${state_text}</div>
+            `;
+
+            // Position tooltip near cursor
+            const rect = this.canvas.getBoundingClientRect();
+            tooltip.style.left = `${event.clientX - rect.left + 15}px`;
+            tooltip.style.top = `${event.clientY - rect.top + 15}px`;
+            tooltip.style.display = "block";
+
+            // Sync with bottom monitor hover highlight
+            if (window.App && window.App.highlight_monitor_pin) {
+                window.App.highlight_monitor_pin(pin_num);
+            }
+        } else {
+            tooltip.style.display = "none";
+            if (window.App && window.App.highlight_monitor_pin) {
+                window.App.highlight_monitor_pin(null);
+            }
+        }
     },
 
     // Χειρισμός απελευθέρωσης κλικ (Mouseup)
@@ -275,13 +344,25 @@ const BreadboardCanvas = {
         }
     },
 
-    // Εύρεση εξαρτήματος στις συντεταγμένες x, y
+    // Εύρεση εξαρτήματος στις συντεταγμένες x, y (εξαιρεί τα άκρα/terminals)
     get_component_at(x, y) {
         for (const comp of Object.values(this.components)) {
             if (comp.id === "RPI") continue;
             const cx = comp.properties.x || 100;
             const cy = comp.properties.y || 100;
-            const size = 30; // Ακτίνα / μέγεθος περιοχής κλικ
+            
+            // Αν το κλικ είναι πολύ κοντά στα terminals (αριστερά/δεξιά), μην επιλέξεις το εξάρτημα
+            const terms_coords = this.get_terminals_coordinates(comp, cx, cy);
+            let near_terminal = false;
+            for (const coord of Object.values(terms_coords)) {
+                if (Math.hypot(x - coord.x, y - coord.y) < 12) {
+                    near_terminal = true;
+                    break;
+                }
+            }
+            if (near_terminal) continue;
+
+            const size = 20; // Μειώνουμε το μέγεθος της περιοχής drag
             if (Math.hypot(x - cx, y - cy) < size) {
                 return comp;
             }
@@ -307,7 +388,7 @@ const BreadboardCanvas = {
             // Υπολογισμός συντεταγμένων των terminals για κάθε εξάρτημα
             const terms_coords = this.get_terminals_coordinates(comp, cx, cy);
             for (const [name, coord] of Object.entries(terms_coords)) {
-                if (Math.hypot(x - coord.x, y - coord.y) < 6) {
+                if (Math.hypot(x - coord.x, y - coord.y) < 10) {
                     return { comp_id: comp.id, name, x: coord.x, y: coord.y };
                 }
             }
@@ -318,14 +399,18 @@ const BreadboardCanvas = {
     // Υπολογισμός συντεταγμένων των ακροδεκτών ενός εξαρτήματος
     get_terminals_coordinates(comp, cx, cy) {
         const coords = {};
-        if (comp.type === "LED" || comp.type === "RESISTOR" || comp.type === "BUTTON") {
-            // Οριζόντια διάταξη ακροδεκτών
-            coords[comp.terminals[0]] = { x: cx - 25, y: cy };
-            coords[comp.terminals[1]] = { x: cx + 25, y: cy };
+        if (comp.type === "LED") {
+            // LED: anode (positive, left) and cathode (negative, right)
+            coords["anode"] = { x: cx - 25, y: cy };
+            coords["cathode"] = { x: cx + 25, y: cy };
+        } else if (comp.type === "RESISTOR" || comp.type === "BUTTON") {
+            // Resistor and Button: terminal_a (left) and terminal_b (right)
+            coords["terminal_a"] = { x: cx - 25, y: cy };
+            coords["terminal_b"] = { x: cx + 25, y: cy };
         } else if (comp.type === "BUZZER") {
-            // Κάθετη διάταξη ακροδεκτών
-            coords[comp.terminals[0]] = { x: cx, y: cy - 20 };
-            coords[comp.terminals[1]] = { x: cx, y: cy + 20 };
+            // Buzzer: positive (top) and negative (bottom)
+            coords["positive"] = { x: cx, y: cy - 20 };
+            coords["negative"] = { x: cx, y: cy + 20 };
         }
         return coords;
     },
@@ -337,12 +422,21 @@ const BreadboardCanvas = {
             const pt_b = this.get_terminal_position(wire.to_component, wire.to_terminal);
             if (!pt_a || !pt_b) continue;
             
-            // Υπολογισμός απόστασης του σημείου (x,y) από την ευθεία του καλωδίου
-            const mid_x = (pt_a.x + pt_b.x) / 2;
-            const mid_y = (pt_a.y + pt_b.y) / 2;
+            // Για curved wire (Bezier), κάνουμε δειγματοληψία 10 σημείων κατά μήκος της καμπύλης
+            // ctrl_y = Math.max(pt_a.y, pt_b.y) + 40
+            const ctrl_y = Math.max(pt_a.y, pt_b.y) + 40;
             
-            if (Math.hypot(x - mid_x, y - mid_y) < 12) {
-                return wire;
+            for (let t = 0; t <= 1.0; t += 0.1) {
+                // Bezier equation: (1-t)^2 * P0 + 2*(1-t)*t * P1 + t^2 * P2
+                // Εδώ έχουμε cubic bezier CurveTo: x = (1-t)^3*P0_x + 3*(1-t)^2*t*C1_x + 3*(1-t)*t^2*C2_x + t^3*P3_x
+                // ctrl points: C1 = (P0_x, ctrl_y), C2 = (P3_x, ctrl_y)
+                const mt = 1 - t;
+                const bx = mt*mt*mt*pt_a.x + 3*mt*mt*t*pt_a.x + 3*mt*t*t*pt_b.x + t*t*t*pt_b.x;
+                const by = mt*mt*mt*pt_a.y + 3*mt*mt*t*ctrl_y + 3*mt*t*t*ctrl_y + t*t*t*pt_b.y;
+                
+                if (Math.hypot(x - bx, y - by) < 12) {
+                    return wire;
+                }
             }
         }
         return null;
@@ -390,7 +484,7 @@ const BreadboardCanvas = {
     // Σχεδίαση διακριτικού πλέγματος στο φόντο
     draw_grid() {
         const ctx = this.ctx;
-        ctx.strokeStyle = "hsla(224, 25%, 15%, 0.5)";
+        ctx.strokeStyle = "hsla(220, 20%, 80%, 0.4)";
         ctx.lineWidth = 1;
         const grid_size = 20;
         
@@ -425,35 +519,61 @@ const BreadboardCanvas = {
         // Σχεδίαση GPIO Header Base (Μαύρο πλαστικό)
         ctx.fillStyle = "hsl(0, 0%, 8%)";
         ctx.beginPath();
-        ctx.roundRect(rpi.x + 48, rpi.y + 25, 54, rpi.height - 50, 4);
+        ctx.roundRect(rpi.x + 38, rpi.y + 25, 54, rpi.height - 50, 4);
         ctx.fill();
 
         // Σχεδίαση των 40 Pins
-        for (const [pin_num, pin] of Object.entries(rpi.pins)) {
-            // Σχεδίαση του μεταλλικού pin
-            ctx.fillStyle = "hsl(45, 90%, 55%)"; // Χρυσαφί χρώμα
+        for (const [pin_num_str, pin] of Object.entries(rpi.pins)) {
+            const pin_num = parseInt(pin_num_str);
+            // Χρωματικός κώδικας για εκπαιδευτική χρήση
+            let pin_color = "hsl(45, 90%, 55%)"; // Προεπιλογή: Χρυσό / GPIO
+            if (pin.type === "VCC5") {
+                pin_color = "hsl(0, 85%, 50%)"; // Red for 5V
+            } else if (pin.type === "VCC3") {
+                pin_color = "hsl(38, 90%, 55%)"; // Orange/Yellow for 3.3V
+            } else if (pin.type === "GND") {
+                pin_color = "hsl(0, 0%, 85%)"; // Gray/White for GND
+            } else {
+                pin_color = "hsl(200, 85%, 50%)"; // Blue for general GPIO
+            }
+
+            ctx.fillStyle = pin_color;
             ctx.beginPath();
-            ctx.arc(pin.x, pin.y, 4, 0, Math.PI * 2);
+            ctx.arc(pin.x, pin.y, 4.5, 0, Math.PI * 2);
             ctx.fill();
+
+            // Σχεδίαση μικρών ετικετών (labels) δίπλα στα pins
+            ctx.fillStyle = "hsla(0, 0%, 100%, 0.35)";
+            ctx.font = "bold 7.5px 'JetBrains Mono'";
+            ctx.textAlign = pin_num % 2 === 0 ? "left" : "right";
+            
+            // Text offset
+            const offset_x = pin_num % 2 === 0 ? 8 : -8;
+            let display_name = pin.name;
+            if (display_name.startsWith("GPIO ")) {
+                display_name = "G" + display_name.replace("GPIO ", "");
+            }
+            
+            ctx.fillText(display_name, pin.x + offset_x, pin.y + 2.5);
 
             // Αν είναι το hovered pin, σχεδιάζουμε ένα δακτύλιο
             if (this.hovered_terminal && this.hovered_terminal.comp_id === "RPI" && this.hovered_terminal.name === `pin${pin_num}`) {
                 ctx.strokeStyle = "white";
                 ctx.lineWidth = 1.5;
                 ctx.beginPath();
-                ctx.arc(pin.x, pin.y, 7, 0, Math.PI * 2);
+                ctx.arc(pin.x, pin.y, 8, 0, Math.PI * 2);
                 ctx.stroke();
             }
         }
         
-        // Σχεδίαση κειμένου RPi 4 Label
+        // Σχεδίαση κειμένου RPi Label
         ctx.fillStyle = "hsla(0, 0%, 100%, 0.15)";
         ctx.font = "bold 18px 'Inter'";
         ctx.textAlign = "center";
         ctx.save();
         ctx.translate(rpi.x + 25, rpi.y + rpi.height / 2);
         ctx.rotate(-Math.PI / 2);
-        ctx.fillText("RASPBERRY PI 4", 0, 0);
+        ctx.fillText("RASPBERRY PI", 0, 0);
         ctx.restore();
     },
 
@@ -483,6 +603,13 @@ const BreadboardCanvas = {
                 ctx.moveTo(cx + 10, cy);
                 ctx.lineTo(cx + 25, cy);
                 ctx.stroke();
+
+                // Σχεδίαση '+' και '-' ενδείξεων πολικότητας πάνω από τα πόδια
+                ctx.fillStyle = "hsla(0, 0%, 100%, 0.45)";
+                ctx.font = "bold 9px 'Inter'";
+                ctx.textAlign = "center";
+                ctx.fillText("+", cx - 25, cy - 8);
+                ctx.fillText("-", cx + 25, cy - 8);
 
                 // Σχεδίαση σώματος LED
                 let fill_style = `hsl(0, 60%, 25%)`; // Off state
@@ -597,6 +724,13 @@ const BreadboardCanvas = {
                 ctx.font = "10px monospace";
                 ctx.fillText("+", cx - 8, cy - 6);
                 
+                // Σχεδίαση '+' και '-' ενδείξεων πολικότητας δίπλα στους ακροδέκτες του buzzer
+                ctx.fillStyle = "hsla(0, 0%, 100%, 0.45)";
+                ctx.font = "bold 9px 'Inter'";
+                ctx.textAlign = "center";
+                ctx.fillText("+", cx - 10, cy - 20 + 3);
+                ctx.fillText("-", cx - 10, cy + 20 + 3);
+
                 if (is_sounding) {
                     // Σχεδίαση κυμάτων ήχου
                     ctx.strokeStyle = "hsla(190, 90%, 50%, 0.6)";

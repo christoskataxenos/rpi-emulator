@@ -7,18 +7,18 @@ const CodeEditorManager = {
         require.config({ paths: { vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs" } });
         
         require(["vs/editor/editor.main"], () => {
-            // Ορισμός του θέματος VS Code Dark
+            // Ορισμός του θέματος VS Code Light
             monaco.editor.defineTheme("rpi-dark-theme", {
-                base: "vs-dark",
+                base: "vs",
                 inherit: true,
                 rules: [
-                    { token: "comment", foreground: "6A9955" },
-                    { token: "keyword", foreground: "569CD6" },
-                    { token: "string", foreground: "CE9178" }
+                    { token: "comment", foreground: "008000" },
+                    { token: "keyword", foreground: "0000FF" },
+                    { token: "string", foreground: "A31515" }
                 ],
                 colors: {
-                    "editor.background": "#0b0e14",
-                    "editor.lineHighlightBackground": "#171d26"
+                    "editor.background": "#f5f7fa",
+                    "editor.lineHighlightBackground": "#e4e8f0"
                 }
             });
 
@@ -39,6 +39,11 @@ const CodeEditorManager = {
             
             // Φόρτωση του πρώτου σεναρίου
             App.load_scenario("01_blink_led");
+
+            // Αρχικοποίηση layout σε circuit mode μετά τη σωστή φόρτωση του editor
+            setTimeout(() => {
+                App.set_workspace_mode("circuit");
+            }, 100);
         });
     },
 

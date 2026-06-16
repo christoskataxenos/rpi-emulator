@@ -128,6 +128,23 @@ const App = {
             // Δυνατότητα κλικ σε pin εισόδου (INPUT) για προσομοίωση πατήματος
             pin_element.addEventListener("click", () => this.handle_pin_click(pin_num));
             
+            // Highlight RPi pin on canvas when hovering over monitor pin
+            pin_element.addEventListener("mouseenter", () => {
+                if (window.BreadboardCanvas) {
+                    window.BreadboardCanvas.hovered_terminal = {
+                        comp_id: "RPI",
+                        name: `pin${pin_num}`,
+                        x: window.BreadboardCanvas.rpi_layout.pins[pin_num].x,
+                        y: window.BreadboardCanvas.rpi_layout.pins[pin_num].y
+                    };
+                }
+            });
+            pin_element.addEventListener("mouseleave", () => {
+                if (window.BreadboardCanvas) {
+                    window.BreadboardCanvas.hovered_terminal = null;
+                }
+            });
+            
             if (is_even) {
                 right_col.appendChild(pin_element);
             } else {
@@ -285,6 +302,35 @@ const App = {
         btn_reset_code.addEventListener("click", () => {
             this.load_scenario(this.current_scenario_id, true);
         });
+
+        // Σύνδεση των Tabs
+        const tab_circuit = document.getElementById("tab-circuit");
+        const tab_editor = document.getElementById("tab-editor");
+        
+        tab_circuit.addEventListener("click", () => {
+            tab_editor.classList.remove("active");
+            tab_circuit.classList.add("active");
+            this.set_workspace_mode("circuit");
+        });
+        
+        tab_editor.addEventListener("click", () => {
+            tab_circuit.classList.remove("active");
+            tab_editor.classList.add("active");
+            this.set_workspace_mode("code");
+        });
+
+        // Σύνδεση των Toggles
+        document.getElementById("toggle-sidebar-left").addEventListener("click", () => this.toggle_sidebar("left", true));
+        document.getElementById("btn-expand-sidebar-left").addEventListener("click", () => this.toggle_sidebar("left", false));
+        
+        document.getElementById("toggle-sidebar-right").addEventListener("click", () => this.toggle_sidebar("right", true));
+        document.getElementById("btn-expand-sidebar-right").addEventListener("click", () => this.toggle_sidebar("right", false));
+
+        document.getElementById("toggle-gpio").addEventListener("click", () => this.toggle_footer_panel("gpio", true));
+        document.getElementById("btn-expand-gpio").addEventListener("click", () => this.toggle_footer_panel("gpio", false));
+
+        document.getElementById("toggle-console").addEventListener("click", () => this.toggle_footer_panel("console", true));
+        document.getElementById("btn-expand-console").addEventListener("click", () => this.toggle_footer_panel("console", false));
     },
 
     // Φόρτωση σεναρίου μάθησης
@@ -439,6 +485,134 @@ const App = {
             btn_run.disabled = false;
             btn_stop.classList.add("disabled");
             btn_stop.disabled = true;
+        }
+    },
+
+    // highlight_monitor_pin highlights a specific pin in the bottom monitor panel on canvas hover
+    highlight_monitor_pin(pin_num) {
+        // Remove active highlight from all pins
+        document.querySelectorAll(".pin-monitor").forEach(el => {
+            el.style.borderColor = "";
+            el.style.transform = "";
+            el.style.boxShadow = "";
+        });
+
+        if (pin_num) {
+            const el = document.getElementById(`pin-mon-${pin_num}`);
+            if (el) {
+                el.style.borderColor = "var(--accent-secondary)";
+                el.style.transform = "scale(1.15)";
+                el.style.boxShadow = "0 0 8px var(--accent-secondary)";
+            }
+        }
+    },
+
+    // set_workspace_mode changes layout focus between Circuit designing and Python coding
+    set_workspace_mode(mode) {
+        const breadboard_panel = document.getElementById("breadboard-panel");
+        const editor_panel = document.getElementById("editor-panel");
+        const workspace_center = document.getElementById("workspace-center");
+
+        if (mode === "circuit") {
+            editor_panel.classList.add("hidden");
+            breadboard_panel.classList.remove("hidden");
+            workspace_center.style.gridTemplateRows = "1fr";
+        } else {
+            // code mode
+            breadboard_panel.classList.add("hidden");
+            editor_panel.classList.remove("hidden");
+            workspace_center.style.gridTemplateRows = "1fr";
+        }
+
+        // Notify canvas to resize and fit correctly
+        if (window.BreadboardCanvas) {
+            setTimeout(() => {
+                window.BreadboardCanvas.resize_canvas();
+                window.BreadboardCanvas.calculate_rpi_pins();
+            }, 100);
+        }
+    },
+
+    // toggle_sidebar collapses/expands the left or right aside panels
+    toggle_sidebar(side, collapse) {
+        const main_content = document.getElementById("main-content");
+        const sidebar = document.getElementById(`sidebar-${side}`);
+        const expand_btn = document.getElementById(`btn-expand-sidebar-${side}`);
+
+        if (collapse) {
+            sidebar.classList.add("hidden");
+            expand_btn.classList.remove("hidden");
+        } else {
+            sidebar.classList.remove("hidden");
+            expand_btn.classList.add("hidden");
+        }
+
+        // Update main content grid structure
+        const left_hidden = document.getElementById("sidebar-left").classList.contains("hidden");
+        const right_hidden = document.getElementById("sidebar-right").classList.contains("hidden");
+
+        main_content.className = "";
+        if (left_hidden && right_hidden) {
+            main_content.classList.add("both-collapsed");
+        } else if (left_hidden) {
+            main_content.classList.add("left-collapsed");
+        } else if (right_hidden) {
+            main_content.classList.add("right-collapsed");
+        }
+
+        // Re-fit canvas
+        if (window.BreadboardCanvas) {
+            setTimeout(() => {
+                window.BreadboardCanvas.resize_canvas();
+                window.BreadboardCanvas.calculate_rpi_pins();
+            }, 100);
+        }
+    },
+
+    // toggle_footer_panel collapses or expands either the GPIO monitor or the Console
+    toggle_footer_panel(panel, collapse) {
+        const target = panel === "gpio" ? document.getElementById("gpio-monitor-panel") : document.getElementById("terminal-panel");
+        const expand_btn = panel === "gpio" ? document.getElementById("btn-expand-gpio") : document.getElementById("btn-expand-console");
+        const bottom_bar = document.getElementById("bottom-bar");
+        const app_container = document.getElementById("app-container");
+        const expand_bar = document.getElementById("footer-expand-bar");
+
+        if (collapse) {
+            target.classList.add("collapsed");
+            expand_btn.classList.remove("hidden");
+        } else {
+            target.classList.remove("collapsed");
+            expand_btn.classList.add("hidden");
+        }
+
+        // Check overall footer states
+        const gpio_hidden = document.getElementById("gpio-monitor-panel").classList.contains("collapsed");
+        const console_hidden = document.getElementById("terminal-panel").classList.contains("collapsed");
+
+        bottom_bar.className = "";
+        if (gpio_hidden && console_hidden) {
+            bottom_bar.classList.add("both-collapsed");
+            app_container.classList.add("bottom-collapsed");
+            expand_bar.classList.remove("hidden");
+        } else {
+            app_container.classList.remove("bottom-collapsed");
+            if (gpio_hidden) {
+                bottom_bar.classList.add("gpio-collapsed");
+                expand_bar.classList.remove("hidden");
+            } else if (console_hidden) {
+                bottom_bar.classList.add("console-collapsed");
+                expand_bar.classList.remove("hidden");
+            } else {
+                expand_bar.classList.add("hidden");
+            }
+        }
+
+        // Re-fit canvas
+        if (window.BreadboardCanvas) {
+            setTimeout(() => {
+                window.BreadboardCanvas.resize_canvas();
+                window.BreadboardCanvas.calculate_rpi_pins();
+            }, 100);
         }
     }
 };

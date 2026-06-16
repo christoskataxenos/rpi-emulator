@@ -1,36 +1,36 @@
-/* Ορισμός βασικών μεταβλητών HSL για το χρωματικό σύστημα της εφαρμογής */
+/* Ορισμός βασικών μεταβλητών HSL για το χρωματικό σύστημα της εφαρμογής (Dedicated Light Theme) */
 :root {
-    --bg-dark: hsl(224, 25%, 8%);
-    --bg-darker: hsl(224, 25%, 5%);
-    --panel-bg: hsla(224, 25%, 12%, 0.7);
-    --panel-border: hsla(217, 20%, 25%, 0.4);
-    --panel-border-glow: hsla(250, 80%, 60%, 0.15);
+    --bg-dark: hsl(220, 20%, 97%);
+    --bg-darker: hsl(220, 20%, 93%);
+    --panel-bg: hsla(0, 0%, 100%, 0.85);
+    --panel-border: hsla(217, 10%, 80%, 0.6);
+    --panel-border-glow: hsla(250, 80%, 55%, 0.3);
     
-    --text-primary: hsl(210, 38%, 95%);
-    --text-secondary: hsl(215, 20%, 65%);
-    --text-muted: hsl(215, 12%, 45%);
+    --text-primary: hsl(220, 25%, 15%);
+    --text-secondary: hsl(220, 15%, 35%);
+    --text-muted: hsl(220, 10%, 55%);
     
     /* Χρώματα τόνων (Accents) με HSL */
-    --accent-primary: hsl(250, 84%, 63%);
-    --accent-primary-glow: hsla(250, 84%, 63%, 0.35);
-    --accent-secondary: hsl(190, 90%, 50%);
+    --accent-primary: hsl(250, 80%, 55%);
+    --accent-primary-glow: hsla(250, 80%, 55%, 0.2);
+    --accent-secondary: hsl(200, 90%, 45%);
     
     /* Καταστάσεις / Σφάλματα */
-    --success: hsl(145, 80%, 45%);
-    --success-glow: hsla(145, 80%, 45%, 0.4);
-    --danger: hsl(0, 84%, 58%);
-    --danger-glow: hsla(0, 84%, 58%, 0.4);
-    --warning: hsl(38, 92%, 50%);
-    --warning-glow: hsla(38, 92%, 50%, 0.4);
-    --info: hsl(200, 80%, 50%);
+    --success: hsl(145, 80%, 35%);
+    --success-glow: hsla(145, 80%, 35%, 0.25);
+    --danger: hsl(0, 80%, 50%);
+    --danger-glow: hsla(0, 80%, 50%, 0.25);
+    --warning: hsl(38, 90%, 40%);
+    --warning-glow: hsla(38, 90%, 40%, 0.25);
+    --info: hsl(200, 80%, 45%);
     
     /* Στρογγυλοποίηση γωνιών & σκιάσεις */
     --radius-sm: 6px;
     --radius-md: 10px;
     --radius-lg: 16px;
-    --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 0 30px rgba(99, 102, 241, 0.05);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.12), 0 0 30px rgba(99, 102, 241, 0.03);
     
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
@@ -71,10 +71,15 @@ body {
 /* Διάταξη εφαρμογής (Grid Layout) */
 #app-container {
     display: grid;
-    grid-template-rows: 70px 1fr 240px;
+    grid-template-rows: 70px 1fr 180px;
     height: 100vh;
     padding: 12px;
     gap: 12px;
+    transition: grid-template-rows 0.3s ease;
+}
+
+#app-container.bottom-collapsed {
+    grid-template-rows: 70px 1fr 0px;
 }
 
 /* --- HEADER STYLE --- */
@@ -83,6 +88,42 @@ body {
     justify-content: space-between;
     align-items: center;
     padding: 0 20px;
+}
+
+/* Workspace tab switching design */
+.workspace-tabs {
+    display: flex;
+    background-color: var(--bg-darker);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-sm);
+    padding: 2px;
+    margin-right: 15px;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: calc(var(--radius-sm) - 2px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+}
+
+.tab-btn.active {
+    background-color: var(--accent-primary);
+    color: white;
+    box-shadow: 0 2px 8px var(--accent-primary-glow);
 }
 
 .header-logo {
@@ -219,6 +260,91 @@ body {
     gap: 12px;
     height: 100%;
     overflow: hidden;
+    transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#main-content.left-collapsed {
+    grid-template-columns: 0px 1fr 340px;
+}
+
+#main-content.right-collapsed {
+    grid-template-columns: 280px 1fr 0px;
+}
+
+#main-content.both-collapsed {
+    grid-template-columns: 0px 1fr 0px;
+}
+
+/* Toggles & Panel Controls styling */
+.panel-toggle-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.panel-toggle-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--panel-border);
+}
+
+.sidebar-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--panel-border);
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+}
+
+.collapsed-expand-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    box-shadow: var(--shadow-md);
+    transition: all 0.2s ease;
+}
+
+.collapsed-expand-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-darker);
+    border-color: var(--accent-primary);
+}
+
+#btn-expand-sidebar-left {
+    left: 20px;
+}
+
+#btn-expand-sidebar-right {
+    right: 20px;
+}
+
+.hidden {
+    display: none !important;
 }
 
 /* --- Sidebar Left: Component Cabinet --- */
@@ -315,9 +441,10 @@ body {
 /* --- WORKSPACE CENTER STYLE --- */
 #workspace-center {
     display: grid;
-    grid-template-rows: 1fr 1fr;
+    grid-template-rows: 1.2fr 0.8fr; /* Give more space to the breadboard view */
     gap: 12px;
     height: 100%;
+    min-height: 0; /* Prevents overflow */
 }
 
 .panel-header {
@@ -341,18 +468,77 @@ body {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: relative;
 }
 
 #canvas-container {
     flex-grow: 1;
     position: relative;
-    background-color: hsl(224, 25%, 5%);
-    overflow: auto;
+    background-color: hsl(220, 20%, 98%);
+    overflow: hidden; /* Prevent scrolls inside container */
 }
 
 #circuit-canvas {
     display: block;
     cursor: default;
+    width: 100%;
+    height: 100%;
+}
+
+/* Tooltip για Pins */
+.pin-tooltip {
+    position: absolute;
+    background-color: hsla(220, 20%, 98%, 0.95);
+    border: 1px solid var(--panel-border-glow);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    color: var(--text-primary);
+    font-size: 11px;
+    font-family: var(--font-sans);
+    pointer-events: none;
+    box-shadow: var(--shadow-md);
+    z-index: 100;
+    display: none;
+    max-width: 200px;
+    backdrop-filter: blur(8px);
+}
+
+.pin-tooltip .tooltip-title {
+    font-weight: 700;
+    font-family: var(--font-mono);
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--panel-border);
+    padding-bottom: 2px;
+}
+
+.pin-tooltip .tooltip-detail {
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
+.pin-tooltip .tooltip-status {
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    margin-top: 4px;
+    display: inline-block;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+.status-high {
+    background-color: hsla(145, 80%, 45%, 0.2);
+    color: var(--success);
+}
+
+.status-low {
+    background-color: hsla(215, 12%, 45%, 0.2);
+    color: var(--text-muted);
+}
+
+.status-vcc {
+    background-color: hsla(0, 84%, 58%, 0.2);
+    color: var(--danger);
 }
 
 .wire-color-picker {
@@ -528,6 +714,38 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+    transition: all 0.3s ease;
+}
+
+#bottom-bar.gpio-collapsed {
+    grid-template-columns: 0px 1fr;
+}
+
+#bottom-bar.console-collapsed {
+    grid-template-columns: 1fr 0px;
+}
+
+#bottom-bar.both-collapsed {
+    display: none;
+}
+
+#footer-expand-bar {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding: 0 10px;
+    margin-top: -6px;
+}
+
+#footer-expand-bar .footer-btn {
+    position: static;
+    transform: none;
+    height: 30px;
+    font-size: 11px;
+    padding: 0 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 #gpio-monitor-panel {
@@ -535,6 +753,10 @@ body {
     flex-direction: column;
     padding: 12px;
     overflow: hidden;
+}
+
+#gpio-monitor-panel.collapsed, #terminal-panel.collapsed {
+    display: none !important;
 }
 
 #gpio-monitor-panel .panel-title {
@@ -667,7 +889,7 @@ body {
     font-size: 11px;
     overflow-y: auto;
     white-space: pre-wrap;
-    color: hsl(210, 20%, 80%);
+    color: var(--text-primary);
 }
 
 .log-line {
@@ -677,7 +899,7 @@ body {
 }
 
 .system-log { border-color: var(--info); color: var(--info); }
-.stdout-log { border-color: var(--text-muted); }
+.stdout-log { border-color: var(--text-muted); color: var(--text-secondary); }
 .stderr-log { border-color: var(--danger); color: var(--danger); }
 .warning-log { border-color: var(--warning); color: var(--warning); font-weight: 600; }
 

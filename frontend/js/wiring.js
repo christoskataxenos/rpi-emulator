@@ -40,12 +40,36 @@ const WiringManager = {
 
     // Αποστολή αιτήματος για δημιουργία καλωδίου στο backend
     async create_wire(from_comp, from_term, to_comp, to_term) {
+        // Αυτόματη επιλογή χρώματος με βάση τις συνδέσεις Power/GND
+        let wire_color = this.current_color;
+
+        const check_vcc_gnd = (comp, term) => {
+            if (comp === "RPI") {
+                const pin_num = parseInt(term.replace("pin", ""));
+                const pin_def = window.BreadboardCanvas ? window.BreadboardCanvas.rpi_pin_definitions[pin_num - 1] : null;
+                if (pin_def) {
+                    if (pin_def.type === "VCC3" || pin_def.type === "VCC5") return "VCC";
+                    if (pin_def.type === "GND") return "GND";
+                }
+            }
+            return null;
+        };
+
+        const from_type = check_vcc_gnd(from_comp, from_term);
+        const to_type = check_vcc_gnd(to_comp, to_term);
+
+        if (from_type === "VCC" || to_type === "VCC") {
+            wire_color = "#ff0000"; // Κόκκινο για τροφοδοσία VCC
+        } else if (from_type === "GND" || to_type === "GND") {
+            wire_color = "#000000"; // Μαύρο για γείωση GND
+        }
+
         const payload = {
             from_component: from_comp,
             from_terminal: from_term,
             to_component: to_comp,
             to_terminal: to_term,
-            color: this.current_color
+            color: wire_color
         };
 
         try {
