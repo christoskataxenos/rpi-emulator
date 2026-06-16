@@ -369,6 +369,10 @@ async def websocket_endpoint(websocket: WebSocket):
         if websocket in active_sockets:
             active_sockets.remove(websocket)
 
+# Προσάρτηση των στατικών αρχείων για τα σενάρια/μαθήματα
+scenarios_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scenarios")
+app.mount("/scenarios", StaticFiles(directory = scenarios_dir), name = "scenarios")
+
 # Προσάρτηση των στατικών αρχείων του frontend για την εξυπηρέτηση του web UI
 frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
 app.mount("/", StaticFiles(directory = frontend_dir, html = True), name = "static")
