@@ -110,7 +110,7 @@ class PhysicsEngine:
         
         # Βρίσκουμε ποιοι κόμβοι συνδέονται με πηγές (Vcc ή GPIO Out) και Ground
         source_nodes = []
-        gnd_node = None
+        gnd_nodes = []  # Λίστα GND κόμβων (φυσικά GND pins + GPIO OUTPUT LOW)
         
         for i, node in enumerate(nodes):
             volts = self._get_node_voltage(node)
@@ -119,12 +119,22 @@ class PhysicsEngine:
                 if volts > 0:
                     source_nodes.append((i, volts))
             if self._is_gnd_node(node):
-                gnd_node = i
+                if i not in gnd_nodes:
+                    gnd_nodes.append(i)
                 node_voltages[i] = 0.0
+
+        # Επίσης αναγνωρίζουμε GPIO OUTPUT LOW (0V) ως έγκυρους κόμβους GND
+        # Αυτό επιτρέπει κυκλώματα τύπου VCC → R → LED → GPIO_OUT_LOW
+        for i in list(node_voltages.keys()):
+            if node_voltages[i] == 0.0 and i not in gnd_nodes:
+                gnd_nodes.append(i)
+
+        # Backward compat: κρατάμε το πρώτο GND node για αναφορά
+        gnd_node = gnd_nodes[0] if gnd_nodes else None
 
         # Έλεγχος για βραχυκύκλωμα (direct Vcc to GND)
         for src_idx, volts in source_nodes:
-            if src_idx == gnd_node:
+            if src_idx in gnd_nodes:
                 warnings.append({
                     "type": "SHORT_CIRCUIT",
                     "message": "Ανιχνεύθηκε βραχυκύκλωμα! Πηγή τροφοδοσίας συνδέεται απευθείας με τη γείωση (GND)."
@@ -157,85 +167,100 @@ class PhysicsEngine:
                 adj[node_a_idx].append((node_b_idx, comp))
                 adj[node_b_idx].append((node_a_idx, comp))
 
-        # Εύρεση μονοπατιών από τις πηγές τάσης προς το GND
-        # Αυτό μας επιτρέπει να υπολογίσουμε το ρεύμα σε απλά εκπαιδευτικά κυκλώματα
+        # Εύρεση μονοπατιών από τις πηγές τάσης προς ΟΛΟΥΣ τους κόμβους GND
+        # Αυτό υποστηρίζει και GPIO OUTPUT LOW ως sink (VCC → R → LED → GPIO)
         activated_inputs = set()
+        already_processed = set()  # Αποφυγή διπλής επεξεργασίας ίδιων μονοπατιών
         
         for src_idx, volts in source_nodes:
-            if gnd_node is None:
+            if not gnd_nodes:
                 break
-                
-            # Αναζήτηση μονοπατιού (DFS/BFS) από src_idx σε gnd_node
-            paths = self._find_paths_to_gnd(src_idx, gnd_node, adj)
             
-            for path in paths:
-                # Υπολογισμός συνολικής αντίστασης και πτώσης τάσης στο μονοπάτι
-                total_resistance = 0.0
-                voltage_drop = 0.0
-                has_led = False
-                led_comp = None
-                button_open = False
-                buzzer_comp = None
+            for gnd_n in gnd_nodes:
+                if src_idx == gnd_n:
+                    continue  # Skip: πηγή και GND στον ίδιο κόμβο (βραχυκύκλωμα)
                 
-                for comp in path:
-                    if comp.type == "RESISTOR":
-                        total_resistance += float(comp.properties.get("resistance", 1000.0))
-                    elif comp.type == "LED":
-                        has_led = True
-                        led_comp = comp
-                        voltage_drop += LED_FORWARD_VOLTAGE
-                        total_resistance += LED_INTERNAL_RESISTANCE
-                    elif comp.type == "BUZZER":
-                        buzzer_comp = comp
-                        total_resistance += BUZZER_RESISTANCE
-                    elif comp.type == "BUTTON":
-                        # Αν το κουμπί δεν είναι πατημένο, το κύκλωμα είναι ανοιχτό
-                        is_pressed = comp.properties.get("pressed", False)
-                        if not is_pressed:
-                            button_open = True
+                # Αναζήτηση μονοπατιού (DFS) από src_idx σε gnd_n
+                paths = self._find_paths_to_gnd(src_idx, gnd_n, adj)
+                
+                for path in paths:
+                    # Μοναδικό κλειδί για αποφυγή διπλής επεξεργασίας
+                    path_key = (src_idx, gnd_n, tuple(c.id for c in path))
+                    if path_key in already_processed:
+                        continue
+                    already_processed.add(path_key)
+                    
+                    # Τάση πηγής μείον τάση sink (για GPIO OUTPUT LOW = 0V)
+                    sink_voltage = node_voltages.get(gnd_n, 0.0)
+                    effective_voltage = volts - sink_voltage
 
-                # Αν κάποιο κουμπί είναι ανοιχτό, δεν περνάει ρεύμα
-                if button_open:
-                    continue
+                    # Υπολογισμός συνολικής αντίστασης και πτώσης τάσης στο μονοπάτι
+                    total_resistance = 0.0
+                    voltage_drop = 0.0
+                    has_led = False
+                    led_comp = None
+                    button_open = False
+                    buzzer_comp = None
+                    
+                    for comp in path:
+                        if comp.type == "RESISTOR":
+                            total_resistance += float(comp.properties.get("resistance", 1000.0))
+                        elif comp.type == "LED":
+                            has_led = True
+                            led_comp = comp
+                            voltage_drop += LED_FORWARD_VOLTAGE
+                            total_resistance += LED_INTERNAL_RESISTANCE
+                        elif comp.type == "BUZZER":
+                            buzzer_comp = comp
+                            total_resistance += BUZZER_RESISTANCE
+                        elif comp.type == "BUTTON":
+                            # Αν το κουμπί δεν είναι πατημένο, το κύκλωμα είναι ανοιχτό
+                            is_pressed = comp.properties.get("pressed", False)
+                            if not is_pressed:
+                                button_open = True
 
-                # Υπολογισμός ρεύματος
-                remaining_voltage = volts - voltage_drop
-                if remaining_voltage <= 0:
-                    current = 0.0
-                else:
-                    # Αν δεν υπάρχει αντίσταση (total_resistance = 0), έχουμε βραχυκύκλωμα
-                    if total_resistance == 0:
-                        current = 999.0  # Πολύ μεγάλο ρεύμα
+                    # Αν κάποιο κουμπί είναι ανοιχτό, δεν περνάει ρεύμα
+                    if button_open:
+                        continue
+
+                    # Υπολογισμός ρεύματος με βάση την πραγματική διαφορά δυναμικού
+                    remaining_voltage = effective_voltage - voltage_drop
+                    if remaining_voltage <= 0:
+                        current = 0.0
                     else:
-                        current = remaining_voltage / total_resistance
+                        # Αν δεν υπάρχει αντίσταση (total_resistance = 0), έχουμε βραχυκύκλωμα
+                        if total_resistance == 0:
+                            current = 999.0  # Πολύ μεγάλο ρεύμα
+                        else:
+                            current = remaining_voltage / total_resistance
 
-                # Έλεγχος ορίων και προειδοποιήσεις
-                if current == 999.0:
-                    warnings.append({
-                        "type": "SHORT_CIRCUIT",
-                        "message": "Ανιχνεύθηκε βραχυκύκλωμα στο μονοπάτι! Πηγή συνδεδεμένη απευθείας στη γείωση."
-                    })
-                else:
-                    # Ανάλυση της κατάστασης του LED
-                    if has_led and led_comp:
-                        if current >= LED_MIN_CURRENT:
-                            component_states[led_comp.id] = "lit"
-                            # Αν το ρεύμα ξεπερνά το μέγιστο επιτρεπτό
-                            if current > LED_MAX_CURRENT:
-                                warnings.append({
-                                    "type": "OVERCURRENT",
-                                    "component_id": led_comp.id,
-                                    "message": f"Προειδοποίηση: Το LED '{led_comp.id}' διαρρέεται από υπερβολικό ρεύμα ({current*1000:.1f} mA). Χρησιμοποιήστε αντίσταση για προστασία!"
-                                })
-                        else:
-                            component_states[led_comp.id] = "off"
-                            
-                    # Ανάλυση της κατάστασης του Buzzer
-                    if buzzer_comp:
-                        if current >= BUZZER_MIN_CURRENT:
-                            component_states[buzzer_comp.id] = "sounding"
-                        else:
-                            component_states[buzzer_comp.id] = "silent"
+                    # Έλεγχος ορίων και προειδοποιήσεις
+                    if current == 999.0:
+                        warnings.append({
+                            "type": "SHORT_CIRCUIT",
+                            "message": "Ανιχνεύθηκε βραχυκύκλωμα στο μονοπάτι! Πηγή συνδεδεμένη απευθείας στη γείωση."
+                        })
+                    else:
+                        # Ανάλυση της κατάστασης του LED
+                        if has_led and led_comp:
+                            if current >= LED_MIN_CURRENT:
+                                component_states[led_comp.id] = "lit"
+                                # Αν το ρεύμα ξεπερνά το μέγιστο επιτρεπτό
+                                if current > LED_MAX_CURRENT:
+                                    warnings.append({
+                                        "type": "OVERCURRENT",
+                                        "component_id": led_comp.id,
+                                        "message": f"Προειδοποίηση: Το LED '{led_comp.id}' διαρρέεται από υπερβολικό ρεύμα ({current*1000:.1f} mA). Χρησιμοποιήστε αντίσταση για προστασία!"
+                                    })
+                            else:
+                                component_states[led_comp.id] = "off"
+                                
+                        # Ανάλυση της κατάστασης του Buzzer
+                        if buzzer_comp:
+                            if current >= BUZZER_MIN_CURRENT:
+                                component_states[buzzer_comp.id] = "sounding"
+                            else:
+                                component_states[buzzer_comp.id] = "silent"
 
         # Ενημέρωση των GPIO INPUT pins ανάλογα με τη σύνδεσή τους σε πηγές τάσης
         # Για κάθε κόμβο που συνδέεται με μια πηγή τάσης (Vcc > 1.8V), αν περιέχει GPIO INPUT,

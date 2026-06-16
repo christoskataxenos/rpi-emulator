@@ -101,6 +101,7 @@ async def broadcast_message(message: dict):
 # REST Endpoint: Ρύθμιση της λειτουργίας ενός GPIO pin (Setup)
 @app.post("/api/gpio/setup")
 async def setup_pin(data: PinSetupModel):
+    print(f"[DEBUG setup] pin={data.pin_number}, mode='{data.mode}', pull='{data.pull}'")
     gpio_registry.set_pin_mode(data.pin_number, data.mode)
     gpio_registry.set_pin_pull(data.pin_number, data.pull)
     
@@ -128,6 +129,8 @@ async def output_pin(data: PinOutputModel):
     
     # Επίλυση του κυκλώματος μετά από κάθε αλλαγή κατάστασης pin
     solve_results = physics_engine.solve_circuit(circuit_manager)
+    pin_state_obj = gpio_registry.pins.get(data.pin_number)
+    print(f"[DEBUG output] pin={data.pin_number}, state={data.state}, mode='{pin_state_obj.mode if pin_state_obj else 'UNKNOWN'}', solve={solve_results}")
     await broadcast_message({
         "type": "circuit_solved",
         "data": solve_results
