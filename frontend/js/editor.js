@@ -1,6 +1,7 @@
 // Module διαχείρισης του Monaco Code Editor
 const CodeEditorManager = {
     editor: null,
+    pending_code: null,
 
     init() {
         // Ρύθμιση του RequireJS για φόρτωση του Monaco Editor από το CDN
@@ -37,8 +38,11 @@ const CodeEditorManager = {
             // Εγγραφή των προτάσεων αυτόματης συμπλήρωσης (IntelliSense)
             this.setup_autocomplete();
             
-            // Φόρτωση του πρώτου σεναρίου
-            App.load_scenario("01_blink_led");
+            // Φόρτωση του εκκρεμούς κώδικα αν υπάρχει
+            if (this.pending_code) {
+                this.set_code(this.pending_code);
+                this.pending_code = null;
+            }
 
             // Αρχικοποίηση layout σε circuit mode μετά τη σωστή φόρτωση του editor
             setTimeout(() => {
@@ -56,6 +60,8 @@ const CodeEditorManager = {
     set_code(code) {
         if (this.editor) {
             this.editor.setValue(code);
+        } else {
+            this.pending_code = code;
         }
     },
 

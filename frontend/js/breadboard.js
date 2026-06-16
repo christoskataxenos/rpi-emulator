@@ -198,6 +198,10 @@ const BreadboardCanvas = {
             this.dragged_comp = comp;
             this.drag_offset.x = x - (comp.properties.x || x);
             this.drag_offset.y = y - (comp.properties.y || y);
+            
+            if (comp.type === "BUTTON") {
+                this.set_button_state(comp, true);
+            }
             return;
         }
     }
@@ -290,6 +294,9 @@ const BreadboardCanvas = {
     // Χειρισμός απελευθέρωσης κλικ (Mouseup)
     handle_mouseup(event) {
         if (this.dragged_comp) {
+            if (this.dragged_comp.type === "BUTTON") {
+                this.set_button_state(this.dragged_comp, false);
+            }
             // Αποθήκευση της νέας θέσης του εξαρτήματος
             this.dragged_comp = null;
             return;
@@ -307,6 +314,23 @@ const BreadboardCanvas = {
                 WiringManager.cancel();
             }
             this.temp_wire_end = null;
+        }
+    },
+
+    async set_button_state(comp, is_pressed) {
+        comp.properties.pressed = is_pressed;
+        
+        try {
+            await fetch("/api/simulator/input", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    component_id: comp.id,
+                    pressed: is_pressed
+                })
+            });
+        } catch (err) {
+            console.error("Σφάλμα κατά την αποστολή προσομοίωσης κουμπιού:", err);
         }
     },
 
@@ -445,7 +469,7 @@ const BreadboardCanvas = {
     // Λήψη ακριβούς θέσης ενός ακροδέκτη
     get_terminal_position(comp_id, terminal_name) {
         if (comp_id === "RPI") {
-            const pin_num = int_val = parseInt(terminal_name.replace("pin", ""));
+            const pin_num = parseInt(terminal_name.replace("pin", ""));
             return this.rpi_layout.pins[pin_num];
         }
         
@@ -825,7 +849,7 @@ const BreadboardCanvas = {
         
         // Σχεδιάζουμε κόκκινο περίγραμμα σε ολόκληρο το panel αν υπάρχει critical warning
         ctx.beginPath();
-        ctx.roundRect(4, 4, this.canvas.width - 8, this.canvas.height - 8, var_radius = 8);
+        ctx.roundRect(4, 4, this.canvas.width - 8, this.canvas.height - 8, 8);
         ctx.fill();
         ctx.stroke();
         

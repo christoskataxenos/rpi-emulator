@@ -1,6 +1,6 @@
 // Κλάση διαχείρισης WebSocket σύνδεσης με το backend
 class SimWebSocket {
-    constructor(host = "localhost:8000") {
+    constructor(host = window.location.host || "localhost:8000") {
         this.host = host;
         this.socket = null;
         this.listeners = {};

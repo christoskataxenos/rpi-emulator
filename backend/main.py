@@ -88,6 +88,12 @@ class CodeRunModel(BaseModel):
     code: str
 
 
+class CircuitLoadModel(BaseModel):
+    components: List[ComponentModel]
+    wires: List[WireModel]
+
+
+
 # Βοηθητική συνάρτηση για την αποστολή μηνύματος σε όλα τα συνδεδεμένα WebSockets
 async def broadcast_message(message: dict):
     # Δημιουργία αντιγράφου της λίστας για αποφυγή σφαλμάτων κατά τη διαγραφή
@@ -250,6 +256,48 @@ async def clear_circuit():
     return {"status": "success"}
 
 
+# REST Endpoint: Φόρτωση ολόκληρου του κυκλώματος (εξαρτήματα και καλώδια) μαζικά
+@app.post("/api/circuit/load")
+async def load_circuit(data: CircuitLoadModel):
+    # Καθαρισμός του προηγούμενου κυκλώματος
+    circuit_manager.clear_circuit()
+    
+    # Προσθήκη όλων των εξαρτημάτων στο κύκλωμα
+    for comp in data.components:
+        # Το RPi υπάρχει ήδη από την αρχικοποίηση του CircuitManager
+        if comp.id == "RPI":
+            continue
+        success = circuit_manager.add_component(comp.id, comp.type, comp.properties)
+        if not success:
+            raise HTTPException(status_code = 400, detail = f"Αποτυχία προσθήκης εξαρτήματος: {comp.id}")
+            
+    # Προσθήκη όλων των καλωδίων στο κύκλωμα
+    for wire in data.wires:
+        success = circuit_manager.add_wire(
+            wire.from_component, wire.from_terminal,
+            wire.to_component, wire.to_terminal, wire.color
+        )
+        if not success:
+            raise HTTPException(status_code = 400, detail = "Αποτυχία σύνδεσης καλωδίου.")
+            
+    # Επίλυση του κυκλώματος με τον κινητήρα φυσικής
+    solve_results = physics_engine.solve_circuit(circuit_manager)
+    
+    # Ενημέρωση όλων των συνδεδεμένων frontends
+    await broadcast_message({
+        "type": "circuit_change",
+        "circuit": circuit_manager.get_circuit_data(),
+        "solve_results": solve_results
+    })
+    
+    return {
+        "status": "success",
+        "circuit": circuit_manager.get_circuit_data(),
+        "solve_results": solve_results
+    }
+
+
+
 @app.get("/api/circuit")
 async def get_circuit():
     return circuit_manager.get_circuit_data()
@@ -368,6 +416,52 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception:
         if websocket in active_sockets:
             active_sockets.remove(websocket)
+
+@app.get("/api/scenarios")
+async def get_scenarios():
+    scenarios_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scenarios")
+    scenarios = []
+    
+    if os.path.exists(scenarios_dir):
+        # Sort folders alphabetically to maintain order
+        folders = sorted([f for f in os.listdir(scenarios_dir) if os.path.isdir(os.path.join(scenarios_dir, f))])
+        
+        for folder in folders:
+            scenario_id = folder
+            title = folder
+            difficulty = "Εύκολο"
+            
+            # Simple difficulty logic based on number prefix
+            try:
+                num = int(folder.split("_")[0])
+                if num > 4:
+                    difficulty = "Δύσκολο"
+                elif num > 2:
+                    difficulty = "Μεσαίο"
+            except ValueError:
+                pass
+                
+            readme_path = os.path.join(scenarios_dir, folder, "README.md")
+            if os.path.exists(readme_path):
+                with open(readme_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    # Find first line starting with #
+                    for line in content.split("\n"):
+                        if line.startswith("# "):
+                            # Remove # and Scenario X: prefix if present
+                            title = line[2:].strip()
+                            if ":" in title:
+                                title = title.split(":", 1)[1].strip()
+                            break
+                            
+            scenarios.append({
+                "id": scenario_id,
+                "title": title,
+                "difficulty": difficulty,
+                "number": folder.split("_")[0] if "_" in folder else ""
+            })
+            
+    return scenarios
 
 # Προσάρτηση των στατικών αρχείων για τα σενάρια/μαθήματα
 scenarios_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "scenarios")
