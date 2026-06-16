@@ -25,7 +25,7 @@ BOTH = "BOTH"
 
 # Καθολικές μεταβλητές για τη διαμόρφωση του shim
 # Ορισμός της διεύθυνσης του backend εξομοιωτή
-BACKEND_URL = "http://localhost:8000"
+BACKEND_URL = "http://127.0.0.1:8000"
 current_mode = None
 event_callbacks = {}
 stream_thread = None
