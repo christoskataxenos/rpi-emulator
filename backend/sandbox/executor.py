@@ -43,6 +43,9 @@ class CodeExecutor:
         # Απενεργοποίηση του buffering για να λαμβάνουμε άμεσα τα print statements
         env["PYTHONUNBUFFERED"] = "1"
         
+        # Ορισμός της κωδικοποίησης σε UTF-8 για να αποφευχθούν σφάλματα με ελληνικούς χαρακτήρες (π.χ. σε Windows)
+        env["PYTHONIOENCODING"] = "utf-8"
+        
         # Εκκίνηση της διεργασίας με τη χρήση του sys.executable (τρέχον Python binary)
         # Χρησιμοποιούμε Popen για να μην μπλοκάρει η εκτέλεση του backend
         process = subprocess.Popen(
@@ -51,6 +54,7 @@ class CodeExecutor:
             stdout = subprocess.PIPE,
             stderr = subprocess.PIPE,
             text = True,
+            encoding = "utf-8",
             bufsize = 1
         )
         
