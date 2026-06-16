@@ -218,7 +218,6 @@ async def add_wire(data: WireModel):
     return {"status": "success"}
 
 
-@app.request_validators = {} # Disable default behavior for DELETE body if needed, or use custom path
 @app.post("/api/circuit/wire/delete")
 async def delete_wire(data: WireDeleteModel):
     success = circuit_manager.remove_wire(
