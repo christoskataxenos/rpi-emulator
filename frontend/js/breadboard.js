@@ -181,6 +181,12 @@ const BreadboardCanvas = {
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
         
+        // Κλείσιμο υπάρχοντος popover
+        const existing = document.getElementById("active-comp-settings");
+        if (existing) {
+            existing.remove();
+        }
+
         // 1. Έλεγχος αν έγινε κλικ σε κάποιο terminal (για σύνδεση καλωδίου)
         const term = this.get_terminal_at(x, y);
         if (term) {
@@ -202,6 +208,9 @@ const BreadboardCanvas = {
             if (comp.type === "BUTTON") {
                 this.set_button_state(comp, true);
             }
+            
+            // Εμφάνιση του popover ρυθμίσεων
+            this.show_component_settings(comp, event.clientX, event.clientY);
             return;
         }
     }
@@ -879,6 +888,120 @@ const BreadboardCanvas = {
         this.warnings.forEach(w => {
             ConsoleLogger.warn(w.message);
         });
+    },
+
+    // Εμφάνιση του floating popover με ρυθμίσεις για τους αισθητήρες
+    show_component_settings(comp, clientX, clientY) {
+        const editableTypes = ["DHT11", "PIR", "LDR", "ULTRASONIC", "POTENTIOMETER"];
+        if (!editableTypes.includes(comp.type)) {
+            return;
+        }
+
+        const popover = document.createElement("div");
+        popover.id = "active-comp-settings";
+        popover.className = "comp-settings-popover";
+        popover.style.left = `${clientX + 10}px`;
+        popover.style.top = `${clientY + 10}px`;
+
+        const title = document.createElement("h4");
+        title.innerHTML = `<span>${comp.id}</span> <button class="close-popover">&times;</button>`;
+        popover.appendChild(title);
+
+        title.querySelector(".close-popover").onclick = () => popover.remove();
+
+        const content = document.createElement("div");
+        content.className = "popover-content";
+        content.style.display = "flex";
+        content.style.flexDirection = "column";
+        content.style.gap = "10px";
+
+        if (comp.type === "DHT11") {
+            const temp = comp.properties.temperature ?? 25.0;
+            const hum = comp.properties.humidity ?? 50.0;
+
+            const tempGroup = this._create_slider_group("Θερμοκρασία", "°C", -40, 80, temp, 1, (val) => {
+                this.api_update_properties(comp.id, { temperature: parseFloat(val) });
+            });
+            const humGroup = this._create_slider_group("Υγρασία", "%", 0, 100, hum, 1, (val) => {
+                this.api_update_properties(comp.id, { humidity: parseFloat(val) });
+            });
+
+            content.appendChild(tempGroup);
+            content.appendChild(humGroup);
+        } else if (comp.type === "PIR") {
+            const motion = comp.properties.motion ?? false;
+            const btn = document.createElement("button");
+            btn.className = `toggle-btn ${motion ? "active" : ""}`;
+            btn.textContent = motion ? "Κίνηση: Ανιχνεύθηκε" : "Ανίχνευση Κίνησης";
+            btn.onclick = () => {
+                const newState = !comp.properties.motion;
+                comp.properties.motion = newState;
+                btn.className = `toggle-btn ${newState ? "active" : ""}`;
+                btn.textContent = newState ? "Κίνηση: Ανιχνεύθηκε" : "Ανίχνευση Κίνησης";
+                this.api_update_properties(comp.id, { motion: newState });
+            };
+            content.appendChild(btn);
+        } else if (comp.type === "LDR") {
+            const light = comp.properties.light_intensity ?? 50.0;
+            const lightGroup = this._create_slider_group("Φωτεινότητα", "%", 0, 100, light, 1, (val) => {
+                this.api_update_properties(comp.id, { light_intensity: parseFloat(val) });
+            });
+            content.appendChild(lightGroup);
+        } else if (comp.type === "ULTRASONIC") {
+            const dist = comp.properties.distance ?? 100.0;
+            const distGroup = this._create_slider_group("Απόσταση", "cm", 2, 400, dist, 1, (val) => {
+                this.api_update_properties(comp.id, { distance: parseFloat(val) });
+            });
+            content.appendChild(distGroup);
+        } else if (comp.type === "POTENTIOMETER") {
+            const value = comp.properties.value ?? 0.5;
+            const valGroup = this._create_slider_group("Θέση Dial", "%", 0, 100, Math.round(value * 100), 1, (val) => {
+                this.api_update_properties(comp.id, { value: parseFloat(val) / 100.0 });
+            });
+            content.appendChild(valGroup);
+        }
+
+        popover.appendChild(content);
+        document.body.appendChild(popover);
+    },
+
+    _create_slider_group(label, unit, min, max, value, step, onChange) {
+        const group = document.createElement("div");
+        group.className = "setting-group";
+
+        const lbl = document.createElement("label");
+        lbl.innerHTML = `${label}: <span>${value}${unit}</span>`;
+        group.appendChild(lbl);
+
+        const slider = document.createElement("input");
+        slider.type = "range";
+        slider.min = min;
+        slider.max = max;
+        slider.value = value;
+        slider.step = step;
+        slider.oninput = (e) => {
+            lbl.querySelector("span").textContent = `${e.target.value}${unit}`;
+            onChange(e.target.value);
+        };
+        group.appendChild(slider);
+
+        return group;
+    },
+
+    async api_update_properties(comp_id, properties) {
+        const comp = this.components[comp_id];
+        if (comp) {
+            Object.assign(comp.properties, properties);
+        }
+        try {
+            await fetch(`/api/circuit/component/${comp_id}/properties`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(properties)
+            });
+        } catch (err) {
+            console.error("Σφάλμα κατά την ενημέρωση των ιδιοτήτων:", err);
+        }
     }
 };
 

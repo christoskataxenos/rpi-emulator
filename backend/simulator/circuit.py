@@ -52,6 +52,16 @@ class Component:
             return ["terminal_a", "terminal_b"]
         elif self.type == "BUZZER":
             return ["positive", "negative"]
+        elif self.type == "DHT11":
+            return ["vcc", "gnd", "data"]
+        elif self.type == "PIR":
+            return ["vcc", "gnd", "out"]
+        elif self.type == "LDR":
+            return ["terminal_a", "terminal_b"]
+        elif self.type == "ULTRASONIC":
+            return ["vcc", "trig", "echo", "gnd"]
+        elif self.type == "POTENTIOMETER":
+            return ["vcc", "wiper", "gnd"]
         elif self.type == "RPI":
             # Το RPi έχει 40 pins ως ακροδέκτες
             return [f"pin{i}" for i in range(1, 41)]

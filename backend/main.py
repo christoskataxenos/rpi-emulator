@@ -208,6 +208,24 @@ async def remove_component(comp_id: str):
     return {"status": "success"}
 
 
+@app.put("/api/circuit/component/{comp_id}/properties")
+async def update_component_properties(comp_id: str, properties: dict):
+    if comp_id not in circuit_manager.components:
+        raise HTTPException(status_code = 404, detail = "Το εξάρτημα δεν βρέθηκε.")
+    
+    comp = circuit_manager.components[comp_id]
+    comp.properties.update(properties)
+    
+    solve_results = physics_engine.solve_circuit(circuit_manager)
+    await broadcast_message({
+        "type": "circuit_change",
+        "circuit": circuit_manager.get_circuit_data(),
+        "solve_results": solve_results
+    })
+    return {"status": "success"}
+
+
+
 # REST Endpoints: Διαχείριση κυκλώματος (Wires)
 @app.post("/api/circuit/wire")
 async def add_wire(data: WireModel):

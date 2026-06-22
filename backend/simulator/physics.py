@@ -144,6 +144,16 @@ class PhysicsEngine:
                         driving_states[ref_b] = read_a
                         changed = True
 
+                elif comp.type == "PIR":
+                    # Το PIR οδηγεί την έξοδο 'out' σε HIGH αν ανιχνευθεί κίνηση, αλλιώς LOW
+                    is_active = comp.properties.get("motion", False)
+                    ref_out = (comp.id, "out")
+                    old_out = driving_states.get(ref_out, LogicState.HIGH_Z)
+                    new_out = LogicState.HIGH if is_active else LogicState.LOW
+                    if new_out != old_out:
+                        driving_states[ref_out] = new_out
+                        changed = True
+
             # Βήμα 2: Επίλυση των κόμβων (Node Resolution)
             for i, node in enumerate(nodes):
                 node_driving = [driving_states.get(ref, LogicState.HIGH_Z) for ref in node]

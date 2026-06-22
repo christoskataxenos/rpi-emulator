@@ -8,7 +8,7 @@
     <!-- Google Fonts: Inter & JetBrains Mono για κώδικα -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons για όμορφα εικονίδια -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Κύριο αρχείο στυλ -->
@@ -42,6 +42,14 @@
 
                 
                 <div class="control-actions">
+                    <button id="btn-save-project" class="btn btn-secondary" title="Αποθήκευση Project (Κύκλωμα + Κώδικας)">
+                        <i class="fa-solid fa-floppy-disk"></i> Save
+                    </button>
+                    <button id="btn-load-project" class="btn btn-secondary" title="Φόρτωση Project">
+                        <i class="fa-solid fa-folder-open"></i> Load
+                    </button>
+                    <input type="file" id="file-load-project" accept=".rpi,.json" style="display: none;">
+                    
                     <button id="btn-run" class="btn btn-success" title="Εκτέλεση κώδικα Python">
                         <i class="fa-solid fa-play"></i> Run Code
                     </button>
@@ -67,15 +75,8 @@
                     <div class="component-card draggable" draggable="true" data-type="LED" data-color="red">
                         <div class="comp-icon led-icon red-led"></div>
                         <div class="comp-info">
-                            <h3>LED (Κόκκινο)</h3>
-                            <p>Δίοδος Εκπομπής Φωτός (2.0V, 20mA)</p>
-                        </div>
-                    </div>
-                    <div class="component-card draggable" draggable="true" data-type="LED" data-color="green">
-                        <div class="comp-icon led-icon green-led"></div>
-                        <div class="comp-info">
-                            <h3>LED (Πράσινο)</h3>
-                            <p>Δίοδος Εκπομπής Φωτός (2.0V, 20mA)</p>
+                            <h3>LED (RGB / Πολύχρωμο)</h3>
+                            <p>Δεξί κλικ στο καμβά για αλλαγή χρώματος</p>
                         </div>
                     </div>
                     <div class="component-card draggable" draggable="true" data-type="RESISTOR" data-resistance="330">
@@ -106,6 +107,41 @@
                             <p>Ηχητικός βομβητής (5V / 3.3V)</p>
                         </div>
                     </div>
+                    <div class="component-card draggable" draggable="true" data-type="DHT11">
+                        <div class="comp-icon dht-icon"></div>
+                        <div class="comp-info">
+                            <h3>Αισθητήρας DHT11</h3>
+                            <p>Θερμοκρασία & Υγρασία</p>
+                        </div>
+                    </div>
+                    <div class="component-card draggable" draggable="true" data-type="PIR">
+                        <div class="comp-icon pir-icon"></div>
+                        <div class="comp-info">
+                            <h3>Αισθητήρας PIR</h3>
+                            <p>Ανίχνευση Κίνησης</p>
+                        </div>
+                    </div>
+                    <div class="component-card draggable" draggable="true" data-type="LDR">
+                        <div class="comp-icon ldr-icon"></div>
+                        <div class="comp-info">
+                            <h3>Φωτοαντίσταση (LDR)</h3>
+                            <p>Ανίχνευση Φωτεινότητας</p>
+                        </div>
+                    </div>
+                    <div class="component-card draggable" draggable="true" data-type="ULTRASONIC">
+                        <div class="comp-icon ultrasonic-icon"></div>
+                        <div class="comp-info">
+                            <h3>Υπερήχων (Ultrasonic)</h3>
+                            <p>Απόσταση HC-SR04</p>
+                        </div>
+                    </div>
+                    <div class="component-card draggable" draggable="true" data-type="POTENTIOMETER">
+                        <div class="comp-icon potentiometer-icon"></div>
+                        <div class="comp-info">
+                            <h3>Ποτενσιόμετρο</h3>
+                            <p>Μεταβλητή Αντίσταση (Analog)</p>
+                        </div>
+                    </div>
                 </div>
             </aside>
             
@@ -133,6 +169,11 @@
                         <!-- Canvas για τη σχεδίαση της πλακέτας, RPi και καλωδίων -->
                         <canvas id="circuit-canvas"></canvas>
                     </div>
+                </div>
+
+                <!-- Διαχωριστικό αλλαγής μεγέθους -->
+                <div id="workspace-resizer" class="resizer-horizontal">
+                    <div class="resizer-handle"></div>
                 </div>
 
                 <!-- Κάτω Μέρος: Monaco Code Editor -->

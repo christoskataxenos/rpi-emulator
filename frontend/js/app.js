@@ -277,6 +277,15 @@ const App = {
         const btn_clear_console = document.getElementById("btn-clear-console");
         const btn_reset_code = document.getElementById("btn-reset-code");
         
+        // Κουμπιά Save / Load
+        const btn_save = document.getElementById("btn-save-project");
+        const btn_load = document.getElementById("btn-load-project");
+        const file_load = document.getElementById("file-load-project");
+        
+        btn_save.addEventListener("click", () => this.save_project());
+        btn_load.addEventListener("click", () => file_load.click());
+        file_load.addEventListener("change", (e) => this.load_project(e));
+        
         // Λίστα Σεναρίων (Η σύνδεση γίνεται πλέον δυναμικά στο load_scenarios_list)
 
         // Κουμπί Run Code
@@ -324,6 +333,51 @@ const App = {
 
         document.getElementById("toggle-console").addEventListener("click", () => this.toggle_footer_panel("console", true));
         document.getElementById("btn-expand-console").addEventListener("click", () => this.toggle_footer_panel("console", false));
+
+        // --- Drag-to-Resize Logic ---
+        const resizer = document.getElementById("workspace-resizer");
+        const breadboard = document.getElementById("breadboard-panel");
+        const editor = document.getElementById("editor-panel");
+        let isResizing = false;
+
+        if(resizer) {
+            resizer.addEventListener("mousedown", (e) => {
+                isResizing = true;
+                document.body.style.cursor = "row-resize";
+                e.preventDefault();
+            });
+
+            document.addEventListener("mousemove", (e) => {
+                if (!isResizing) return;
+                const container = document.getElementById("workspace-center");
+                const containerRect = container.getBoundingClientRect();
+                
+                // Υπολογισμός ποσοστού με βάση τη θέση του ποντικιού
+                let percentage = ((e.clientY - containerRect.top) / containerRect.height) * 100;
+                
+                // Περιορισμός μεταξύ 20% και 80% για να μην κρύβονται τελείως
+                if (percentage < 20) percentage = 20;
+                if (percentage > 80) percentage = 80;
+                
+                breadboard.style.flex = `0 0 calc(${percentage}% - 6px)`;
+                editor.style.flex = `0 0 calc(${100 - percentage}% - 6px)`;
+            });
+
+            document.addEventListener("mouseup", () => {
+                if (isResizing) {
+                    isResizing = false;
+                    document.body.style.cursor = "default";
+                    
+                    // Ενημέρωση του canvas όταν τελειώσει το resize
+                    if (window.BreadboardCanvas) {
+                        setTimeout(() => {
+                            window.BreadboardCanvas.resize_canvas();
+                            window.BreadboardCanvas.calculate_rpi_pins();
+                        }, 50);
+                    }
+                }
+            });
+        }
     },
 
     // Δυναμική Φόρτωση της λίστας των σεναρίων
@@ -438,6 +492,98 @@ const App = {
         }
     },
 
+    // Αποθήκευση Project (Κύκλωμα + Κώδικας)
+    async save_project() {
+        try {
+            // Λήψη δεδομένων κυκλώματος από το API
+            const res = await fetch("/api/circuit");
+            const circuit_data = await res.json();
+            
+            // Λήψη κώδικα
+            const code = CodeEditorManager.get_code();
+            
+            // Δημιουργία δομής project
+            const project = {
+                version: "1.0",
+                type: "rpi_emulator_project",
+                circuit: circuit_data,
+                code: code
+            };
+            
+            // Δημιουργία αρχείου προς λήψη
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(project, null, 4));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "my_project.rpi");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            
+            ConsoleLogger.system("Το project αποθηκεύτηκε επιτυχώς (.rpi).");
+        } catch (err) {
+            ConsoleLogger.stderr(`Σφάλμα κατά την αποθήκευση: ${err}`);
+        }
+    },
+
+    // Φόρτωση Project (.rpi)
+    async load_project(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const project = JSON.parse(e.target.result);
+                
+                // Απλός έλεγχος συμβατότητας
+                if (project.type !== "rpi_emulator_project" && (!project.components || !project.wires)) {
+                    throw new Error("Μη έγκυρο αρχείο project.");
+                }
+                
+                // Φόρτωση κώδικα (αν υπάρχει)
+                if (project.code !== undefined) {
+                    CodeEditorManager.set_code(project.code);
+                }
+                
+                // Φόρτωση Κυκλώματος
+                const circuit = project.circuit || project; // Υποστήριξη και παλαιότερων δομών χωρίς type
+                if (circuit && circuit.components && circuit.wires) {
+                    const components_payload = [];
+                    for (const [id, comp] of Object.entries(circuit.components)) {
+                        if (id === "RPI") continue;
+                        components_payload.push({
+                            id: id,
+                            type: comp.type,
+                            properties: comp.properties
+                        });
+                    }
+                    
+                    const load_response = await fetch("/api/circuit/load", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            components: components_payload,
+                            wires: circuit.wires
+                        })
+                    });
+                    
+                    if (!load_response.ok) {
+                        const err = await load_response.json();
+                        throw new Error(err.detail || "Σφάλμα φόρτωσης κυκλώματος.");
+                    }
+                }
+                
+                ConsoleLogger.system(`Το project φορτώθηκε επιτυχώς από το ${file.name}.`);
+            } catch (err) {
+                ConsoleLogger.stderr(`Σφάλμα κατά τη φόρτωση του project: ${err.message}`);
+            }
+            
+            // Μηδενισμός του input για να μπορεί να ξαναφορτωθεί το ίδιο αρχείο
+            event.target.value = "";
+        };
+        reader.readAsText(file);
+    },
+
     // Απλή μετατροπή Markdown σε HTML για τις οδηγίες
     simple_markdown_to_html(md) {
         return md
@@ -546,17 +692,19 @@ const App = {
     set_workspace_mode(mode) {
         const breadboard_panel = document.getElementById("breadboard-panel");
         const editor_panel = document.getElementById("editor-panel");
-        const workspace_center = document.getElementById("workspace-center");
+        const resizer = document.getElementById("workspace-resizer");
 
         if (mode === "circuit") {
             editor_panel.classList.add("hidden");
             breadboard_panel.classList.remove("hidden");
-            workspace_center.style.gridTemplateRows = "1fr";
+            if (resizer) resizer.classList.add("hidden");
+            breadboard_panel.style.flex = "1";
         } else {
             // code mode
             breadboard_panel.classList.add("hidden");
             editor_panel.classList.remove("hidden");
-            workspace_center.style.gridTemplateRows = "1fr";
+            if (resizer) resizer.classList.add("hidden");
+            editor_panel.style.flex = "1";
         }
 
         // Notify canvas to resize and fit correctly
