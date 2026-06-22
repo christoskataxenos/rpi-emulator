@@ -1,32 +1,37 @@
 # Raspberry Pi Educational Emulator Suite
 
-Welcome to the **Raspberry Pi Educational Emulator Suite**. This cross-platform tool allows students and hobbyists to visually design, wire, and program Raspberry Pi GPIO circuits using Python code entirely in simulation.
+Welcome to the **Raspberry Pi Educational Emulator Suite**. This cross-platform educational tool allows students and hobbyists to visually design, wire, and program Raspberry Pi GPIO circuits using Python code entirely in simulation—no physical hardware required!
 
 ---
 
-## Features
-- **Interactive 2D Canvas**: Drag-and-drop LEDs, resistors, buttons, and buzzers. Click terminals to wire connections.
-- **Python GPIO Shims**: Intercepts `import RPi.GPIO` and `from gpiozero import ...` library calls from client code and routes them in real-time to the simulator.
+## 🚀 Key Features
+
+- **Interactive 2D Canvas**: Drag-and-drop components onto the breadboard. Wire connections dynamically by clicking terminals.
+- **Upgraded Component Library**:
+  - **LEDs**: Single LED component supporting multi-color configuration (Red, Green, Blue, Yellow, White) via right-click.
+  - **Sensors & Analog Inputs**: **DHT11** (Temperature & Humidity), **PIR** (Motion detector), **LDR** (Light Intensity), **Ultrasonic (HC-SR04)** (Distance), and **Potentiometer** (Analog voltage dial).
+- **Interactive Controls (Sliders & Toggles)**: Click on any sensor or potentiometer to open a floating popover settings menu to manipulate values (e.g., temperature, light, motion) in real-time.
+- **Universal Project Save & Load**: Save your entire workspace (Python code editor + breadboard wiring) as a single `.rpi` project file and load it back anytime.
+- **Python GPIO & Sensor Shims**: Mocked libraries intercepting standard GPIO and sensor calls:
+  - `import RPi.GPIO as GPIO`
+  - `from gpiozero import LED, Button, MotionSensor, LightSensor, DistanceSensor, Potentiometer`
+  - `import dht` (for DHT11 measurements)
 - **Real-Time Physics Engine**: Models Ohm's Law and flags short circuits or overcurrent LED connections.
-- **Integrated Monaco Editor**: Modern, high-performance editor with autocompletions/IntelliSense for RPi.GPIO/gpiozero.
-- **Interactive GPIO Monitor**: Glowing 40-pin header grid showing live logic states (HIGH/LOW/PWM).
-- **Educational Scenarios**: Loaded tutorials with pre-wired circuits and starter templates.
+- **Integrated Code Editor**: Modern code editor with autocompletions/IntelliSense for GPIO shims.
 
 ---
 
-## Quick-Start Instructions
+## 🛠️ Quick-Start Instructions
 
 ### 1. Installation
+
 Install dependencies for your system:
 ```bash
 # Install backend requirements
 pip install -r backend/requirements.txt
 
-# Install desktop PyQt6 requirements
+# Install desktop PyQt6 requirements (if running in desktop mode)
 pip install -r desktop/requirements.txt
-
-# (Optional) Install pytest for running tests
-pip install pytest
 ```
 
 ### 2. Run the App
@@ -45,7 +50,13 @@ python desktop/main.py
 ```
 
 ### 3. Run the Tests
-Verify the installation by running unit tests:
+Verify the installation by running unit and integration tests (make sure to set the `PYTHONPATH` so python discovers the shims):
+```powershell
+# Windows PowerShell
+$env:PYTHONPATH="backend/shims;."
+python -m pytest
+```
 ```bash
-pytest tests/
+# Linux/macOS
+PYTHONPATH="backend/shims:." pytest
 ```
