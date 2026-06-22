@@ -198,7 +198,15 @@
                     <!-- Τα σενάρια φορτώνονται δυναμικά από το app.js -->
                     <div style="padding: 15px; text-align: center; color: var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin"></i> Φόρτωση σεναρίων...</div>
                 </div>
-                
+
+                <!-- Κουμπί εκκίνησης Tutorial Mode -->
+                <div id="tutorial-launch-area">
+                    <button id="btn-open-tutorial" class="btn-tutorial-open" title="Άνοιγμα οδηγού project" disabled>
+                        <i class="fa-solid fa-book-open"></i>
+                        <span>Άνοιγμα Οδηγού</span>
+                    </button>
+                </div>
+
                 <div id="tutorial-content-panel">
                     <div id="tutorial-text">
                         <!-- Εδώ θα φορτώνεται το κείμενο του README.md του σεναρίου -->
@@ -252,6 +260,48 @@
              <button id="btn-expand-gpio" class="collapsed-expand-btn footer-btn hidden" title="Εμφάνιση GPIO Monitor"><i class="fa-solid fa-circle-info"></i> GPIO</button>
              <button id="btn-expand-console" class="collapsed-expand-btn footer-btn hidden" title="Εμφάνιση Κονσόλας"><i class="fa-solid fa-terminal"></i> Console</button>
          </div>
+    </div>
+
+    <!-- ===== TUTORIAL MODE OVERLAY ===== -->
+    <div id="tutorial-overlay" class="tutorial-overlay hidden" role="dialog" aria-modal="true" aria-label="Οδηγός Μαθήματος">
+        <div class="tutorial-overlay-panel glass-panel">
+
+            <!-- Overlay Header -->
+            <div class="tutorial-overlay-header">
+                <div class="tut-header-left">
+                    <i class="fa-solid fa-graduation-cap tut-header-icon"></i>
+                    <span id="tutorial-overlay-title">Οδηγός Μαθήματος</span>
+                </div>
+                <div class="tut-progress-wrap">
+                    <span id="tut-progress-label" class="tut-progress-label">0 / 0</span>
+                    <div class="tut-progress-bar">
+                        <div id="tut-progress-fill" class="tut-progress-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <button id="btn-close-tutorial" class="btn-tut-close" title="Κλείσιμο Οδηγού">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Overlay Tabs -->
+            <div class="tut-tabs" role="tablist">
+                <button class="tut-tab active" data-tab="goals" role="tab" aria-selected="true">
+                    <i class="fa-solid fa-bullseye"></i> Στόχοι
+                </button>
+                <button class="tut-tab" data-tab="circuit" role="tab" aria-selected="false">
+                    <i class="fa-solid fa-plug"></i> Κύκλωμα
+                </button>
+                <button class="tut-tab" data-tab="steps" role="tab" aria-selected="false">
+                    <i class="fa-solid fa-list-check"></i> Οδηγίες
+                </button>
+            </div>
+
+            <!-- Tab Panels -->
+            <div class="tut-tab-content" id="tut-panel-goals" role="tabpanel"></div>
+            <div class="tut-tab-content hidden" id="tut-panel-circuit" role="tabpanel"></div>
+            <div class="tut-tab-content" id="tut-panel-steps" role="tabpanel" style="display:none;"></div>
+
+        </div>
     </div>
 
     <!-- Φόρτωση των Javascript αρχείων της εφαρμογής -->

@@ -1,7 +1,341 @@
+// ============================================================
+//  TutorialOverlay — Ολοκληρωμένος Οδηγός Μαθήματος
+//  Διαβάζει το README.md κάθε σεναρίου και εμφανίζει
+//  tabs (Στόχοι / Κύκλωμα / Οδηγίες) με checkboxes και
+//  progress bar πάνω από το κύκλωμα.
+// ============================================================
+const TutorialOverlay = {
+
+    is_open: false,
+
+    // ----------------------------------------------------------
+    // open() — Ανοίγει το overlay και γεμίζει τα tabs
+    // ----------------------------------------------------------
+    open() {
+        const md = App.current_md_text;
+        if (!md) return;
+
+        const parsed = this.parse_readme(md);
+
+        // Τίτλος
+        document.getElementById("tutorial-overlay-title").textContent = parsed.title;
+
+        // Γέμισμα panels
+        document.getElementById("tut-panel-goals").innerHTML   = this.render_goals(parsed.goals, parsed.intro);
+        document.getElementById("tut-panel-circuit").innerHTML = this.render_circuit(parsed.circuit);
+        document.getElementById("tut-panel-steps").innerHTML   = this.render_steps(parsed.steps);
+
+        // Ενεργοποίηση πρώτου tab
+        this.switch_tab("goals");
+
+        // Ενημέρωση progress
+        this.update_progress();
+
+        // Binding checkboxes
+        document.querySelectorAll(".tut-step-checkbox").forEach(cb => {
+            cb.addEventListener("change", () => this.update_progress());
+        });
+
+        // Binding κλικ στο step-item (label συμπεριφορά)
+        document.querySelectorAll(".tut-step-item").forEach(item => {
+            item.addEventListener("click", (e) => {
+                if (e.target.classList.contains("tut-step-checkbox")) return;
+                const cb = item.querySelector(".tut-step-checkbox");
+                if (cb) { cb.checked = !cb.checked; this.update_progress(); }
+            });
+        });
+
+        // Εμφάνιση overlay
+        const overlay = document.getElementById("tutorial-overlay");
+        overlay.classList.remove("hidden");
+        this.is_open = true;
+
+        // Το overlay τοποθετείται σχετικά με το #workspace-center
+        const workspace = document.getElementById("workspace-center");
+        if (workspace && overlay.parentElement !== workspace) {
+            workspace.style.position = "relative";
+            workspace.appendChild(overlay);
+        }
+    },
+
+    // ----------------------------------------------------------
+    // close() — Κλείνει το overlay
+    // ----------------------------------------------------------
+    close() {
+        document.getElementById("tutorial-overlay").classList.add("hidden");
+        this.is_open = false;
+    },
+
+    // ----------------------------------------------------------
+    // switch_tab(tab_name) — Εναλλαγή ενεργού tab
+    // ----------------------------------------------------------
+    switch_tab(tab_name) {
+        const panels = {
+            goals:   document.getElementById("tut-panel-goals"),
+            circuit: document.getElementById("tut-panel-circuit"),
+            steps:   document.getElementById("tut-panel-steps"),
+        };
+        // Απόκρυψη όλων
+        Object.values(panels).forEach(p => { if (p) p.classList.add("hidden"); });
+
+        // Εμφάνιση επιλεγμένου
+        if (panels[tab_name]) panels[tab_name].classList.remove("hidden");
+
+        // Ενημέρωση tab buttons
+        document.querySelectorAll(".tut-tab").forEach(btn => {
+            btn.classList.toggle("active", btn.dataset.tab === tab_name);
+            btn.setAttribute("aria-selected", btn.dataset.tab === tab_name ? "true" : "false");
+        });
+    },
+
+    // ----------------------------------------------------------
+    // update_progress() — Ενημερώνει progress bar και label
+    // ----------------------------------------------------------
+    update_progress() {
+        const checkboxes = document.querySelectorAll(".tut-step-checkbox");
+        const total = checkboxes.length;
+        let done = 0;
+
+        checkboxes.forEach(cb => {
+            const item = cb.closest(".tut-step-item");
+            if (cb.checked) {
+                done++;
+                item.classList.add("done");
+            } else {
+                item.classList.remove("done");
+            }
+        });
+
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+        document.getElementById("tut-progress-fill").style.width = `${pct}%`;
+        document.getElementById("tut-progress-label").textContent = `${done} / ${total}`;
+    },
+
+    // ----------------------------------------------------------
+    // parse_readme(md) — Αναλύει το markdown σε τμήματα
+    // Επιστρέφει: { title, intro, goals, circuit, steps }
+    // ----------------------------------------------------------
+    parse_readme(md) {
+        const lines = md.split("\n");
+        let title = "";
+        let intro_lines = [];
+        let goals_lines = [];
+        let circuit_lines = [];
+        let steps_lines = [];
+        let current_section = "intro";
+
+        for (const line of lines) {
+            // H1 → τίτλος
+            if (/^# /.test(line)) {
+                title = line.replace(/^# /, "").trim();
+                continue;
+            }
+            // H2 → αλλαγή section
+            if (/^## /.test(line)) {
+                const heading = line.replace(/^## /, "").trim().toLowerCase();
+                if (heading.includes("στόχ") || heading.includes("goal")) {
+                    current_section = "goals";
+                } else if (heading.includes("κύκλωμα") || heading.includes("circuit")) {
+                    current_section = "circuit";
+                } else if (heading.includes("οδηγ") || heading.includes("step") || heading.includes("instruct")) {
+                    current_section = "steps";
+                } else {
+                    current_section = "intro";
+                }
+                continue;
+            }
+            // Κατανομή γραμμών στο σωστό τμήμα
+            if (current_section === "intro")    intro_lines.push(line);
+            else if (current_section === "goals")   goals_lines.push(line);
+            else if (current_section === "circuit") circuit_lines.push(line);
+            else if (current_section === "steps")   steps_lines.push(line);
+        }
+
+        return {
+            title:   title || "Οδηγός Μαθήματος",
+            intro:   intro_lines.join("\n").trim(),
+            goals:   goals_lines.join("\n").trim(),
+            circuit: circuit_lines.join("\n").trim(),
+            steps:   steps_lines.join("\n").trim(),
+        };
+    },
+
+    // ----------------------------------------------------------
+    // render_goals(md, intro) — Renders Στόχοι tab
+    // ----------------------------------------------------------
+    render_goals(md, intro) {
+        let html = "";
+
+        // Εισαγωγικό κείμενο
+        if (intro) {
+            html += `<p class="tut-intro-text">${this.inline_format(intro)}</p>`;
+        }
+
+        html += `<h3>Τι θα μάθετε σε αυτό το σενάριο</h3>`;
+        html += `<ul class="tut-goals-list">`;
+
+        const lines = md.split("\n");
+        let has_items = false;
+        for (const line of lines) {
+            // Bullet items
+            const bullet = line.match(/^[-*]\s+(.+)/);
+            if (bullet) {
+                html += `<li class="tut-goal-item">
+                    <span class="tut-goal-bullet"></span>
+                    <span>${this.inline_format(bullet[1])}</span>
+                </li>`;
+                has_items = true;
+            }
+            // Note callouts
+            const note = line.match(/^> \[!NOTE\]\s*(.*)/i);
+            if (note) {
+                // Η επόμενη γραμμή μπορεί να είναι το κείμενο
+                continue;
+            }
+        }
+        // Αν δεν βρέθηκαν bullet items, εμφάνιση ολόκληρου κειμένου
+        if (!has_items && md.trim()) {
+            html += `<li class="tut-goal-item">
+                <span class="tut-goal-bullet"></span>
+                <span>${this.inline_format(md.trim())}</span>
+            </li>`;
+        }
+
+        html += `</ul>`;
+        return html;
+    },
+
+    // ----------------------------------------------------------
+    // render_circuit(md) — Renders Κύκλωμα tab
+    // ----------------------------------------------------------
+    render_circuit(md) {
+        let html = `<h3>Σύνδεση Κυκλώματος</h3>`;
+        html += `<ol class="tut-circuit-list">`;
+
+        const lines = md.split("\n");
+        let step_num = 0;
+        let note_buffer = [];
+        let in_note = false;
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
+            // Note callout — συλλογή πολλαπλών γραμμών
+            if (/^>\s*\[!NOTE\]/i.test(line)) {
+                in_note = true;
+                note_buffer = [];
+                continue;
+            }
+            if (in_note) {
+                if (/^>/.test(line)) {
+                    note_buffer.push(line.replace(/^>\s*/, ""));
+                } else {
+                    // Τέλος note
+                    html += `</ol>${this.render_note(note_buffer.join(" "))}<ol class="tut-circuit-list">`;
+                    in_note = false;
+                    note_buffer = [];
+                }
+            }
+
+            // Αριθμημένο item
+            const numbered = line.match(/^\d+\.\s+(.+)/);
+            if (numbered) {
+                step_num++;
+                html += `<li class="tut-circuit-item">
+                    <span class="tut-circuit-num">${step_num}</span>
+                    <span>${this.inline_format(numbered[1])}</span>
+                </li>`;
+            }
+        }
+
+        // Φλαστάρωμα αν το note ήταν τελευταίο
+        if (in_note && note_buffer.length > 0) {
+            html += `</ol>${this.render_note(note_buffer.join(" "))}`;
+            return html;
+        }
+
+        html += `</ol>`;
+        return html;
+    },
+
+    // ----------------------------------------------------------
+    // render_steps(md) — Renders Οδηγίες tab με checkboxes
+    // ----------------------------------------------------------
+    render_steps(md) {
+        let html = `<h3>Βήματα Υλοποίησης</h3>`;
+        html += `<div class="tut-steps-list">`;
+
+        const lines = md.split("\n");
+        let step_idx = 0;
+
+        for (const line of lines) {
+            // Αριθμημένο βήμα
+            const numbered = line.match(/^\d+\.\s+(.+)/);
+            if (numbered) {
+                const id = `tut-step-${step_idx++}`;
+                html += `<div class="tut-step-item">
+                    <input type="checkbox" class="tut-step-checkbox" id="${id}" aria-label="Βήμα ${step_idx}">
+                    <span class="tut-step-text">${this.inline_format(numbered[1])}</span>
+                </div>`;
+            }
+            // Note callout εντός βημάτων
+            const note = line.match(/^>\s*\[!NOTE\]\s*(.*)/i);
+            if (note && note[1]) {
+                html += this.render_note(note[1]);
+            }
+        }
+
+        html += `</div>`;
+        return html;
+    },
+
+    // ----------------------------------------------------------
+    // render_note(text) — Styled info callout
+    // ----------------------------------------------------------
+    render_note(text) {
+        return `<div class="tut-note">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>${this.inline_format(text)}</span>
+        </div>`;
+    },
+
+    // ----------------------------------------------------------
+    // inline_format(text) — Μορφοποίηση inline markdown
+    // **bold**, `code`, *italic*
+    // ----------------------------------------------------------
+    inline_format(text) {
+        return text
+            .replace(/\*\*(.*?)\*\*/g,  "<strong>$1</strong>")
+            .replace(/`(.*?)`/g,         "<code>$1</code>")
+            .replace(/\*(.*?)\*/g,       "<em>$1</em>");
+    },
+
+    // ----------------------------------------------------------
+    // render_sidebar_preview(md) — Σύντομη προεπισκόπηση
+    // για το #tutorial-text στο sidebar
+    // ----------------------------------------------------------
+    render_sidebar_preview(md) {
+        const parsed = this.parse_readme(md);
+        let html = "";
+
+        if (parsed.title) {
+            html += `<h1 style="font-size:14px;font-weight:700;margin-bottom:8px;color:var(--text-primary);">${parsed.title}</h1>`;
+        }
+        if (parsed.intro) {
+            html += `<p style="font-size:12px;color:var(--text-secondary);line-height:1.55;margin-bottom:10px;">${this.inline_format(parsed.intro)}</p>`;
+        }
+        if (!parsed.title && !parsed.intro) {
+            html += `<p class="select-prompt">Επιλέξτε ένα σενάριο για να ξεκινήσετε.</p>`;
+        }
+        return html;
+    },
+};
+
 // Κεντρικός Ελεγκτής (Controller) του Frontend
 const App = {
     active_session_id: null,
     current_scenario_id: "01_blink_led",
+    current_md_text: null,
     pins_data: {},
 
     init() {
@@ -328,6 +662,13 @@ const App = {
         document.getElementById("toggle-sidebar-right").addEventListener("click", () => this.toggle_sidebar("right", true));
         document.getElementById("btn-expand-sidebar-right").addEventListener("click", () => this.toggle_sidebar("right", false));
 
+        // --- Tutorial Mode Overlay ---
+        document.getElementById("btn-open-tutorial").addEventListener("click", () => TutorialOverlay.open());
+        document.getElementById("btn-close-tutorial").addEventListener("click", () => TutorialOverlay.close());
+        document.querySelectorAll(".tut-tab").forEach(tab => {
+            tab.addEventListener("click", () => TutorialOverlay.switch_tab(tab.dataset.tab));
+        });
+
         document.getElementById("toggle-gpio").addEventListener("click", () => this.toggle_footer_panel("gpio", true));
         document.getElementById("btn-expand-gpio").addEventListener("click", () => this.toggle_footer_panel("gpio", false));
 
@@ -437,8 +778,16 @@ const App = {
             const res_readme = await fetch(`/scenarios/${scenario_id}/README.md`);
             if (res_readme.ok) {
                 const md_text = await res_readme.text();
-                // Απλή μετατροπή markdown σε HTML για εκπαιδευτική χρήση
-                document.getElementById("tutorial-text").innerHTML = this.simple_markdown_to_html(md_text);
+                // Αποθήκευση για χρήση από τον TutorialOverlay
+                App.current_md_text = md_text;
+                // Απλή προεπισκόπηση στο sidebar (τίτλος + εισαγωγή)
+                document.getElementById("tutorial-text").innerHTML = TutorialOverlay.render_sidebar_preview(md_text);
+                // Ενεργοποίηση κουμπιού Οδηγού
+                document.getElementById("btn-open-tutorial").disabled = false;
+                // Αν το overlay είναι ήδη ανοικτό, ανανέωση περιεχομένου
+                if (TutorialOverlay.is_open) {
+                    TutorialOverlay.open();
+                }
             }
             
             // 2. Φόρτωση starter κώδικα (μόνο αν δεν εκτελείται ήδη κώδικας ή ζητήθηκε force)
@@ -584,17 +933,9 @@ const App = {
         reader.readAsText(file);
     },
 
-    // Απλή μετατροπή Markdown σε HTML για τις οδηγίες
+    // Απλή μετατροπή Markdown σε HTML — πλέον χρησιμοποιεί τον TutorialOverlay renderer
     simple_markdown_to_html(md) {
-        return md
-            .replace(/^# (.*$)/gim, "<h1>$1</h1>")
-            .replace(/^## (.*$)/gim, "<h2>$1</h2>")
-            .replace(/^### (.*$)/gim, "<h3>$1</h3>")
-            .replace(/> \[\!NOTE\]\n> (.*$)/gim, "<blockquote><strong>Σημείωση:</strong> $1</blockquote>")
-            .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-            .replace(/\*(.*?)\*/g, "<em>$1</em>")
-            .replace(/`(.*?)`/g, "<code>$1</code>")
-            .replace(/\n/g, "<br>");
+        return TutorialOverlay.render_sidebar_preview(md);
     },
 
     // Εκτέλεση κώδικα Python
