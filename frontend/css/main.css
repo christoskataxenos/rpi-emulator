@@ -376,31 +376,86 @@ body {
     gap: 10px;
 }
 
+/* ================================================================
+   Component Cards — layout + 3D preview wrapper
+   ================================================================ */
 .component-card {
     display: flex;
     align-items: center;
     gap: 12px;
     background-color: var(--bg-darker);
     border: 1px solid var(--panel-border);
-    border-radius: var(--radius-sm);
-    padding: 10px;
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
     cursor: grab;
     user-select: none;
-    transition: all 0.2s ease;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Shimmer line κάτω από το card όταν hover */
+.component-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.component-card:hover::after {
+    opacity: 1;
 }
 
 .component-card:hover {
     border-color: var(--accent-primary);
-    background-color: var(--accent-primary-glow);
-    transform: scale(1.03);
-    box-shadow: var(--shadow-sm);
+    background: linear-gradient(135deg, var(--accent-primary-glow), var(--bg-darker));
+    transform: translateX(3px);
+    box-shadow: 0 4px 16px hsla(162, 72%, 40%, 0.15);
 }
 
 .component-card:active {
     cursor: grabbing;
+    transform: scale(0.97);
 }
 
-/* Icons για Components */
+/* ================================================================
+   3D Preview Wrapper — περιέχει το Three.js canvas
+   ================================================================ */
+.comp-3d-wrap {
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    position: relative;
+    /* Λεπτό glowing border */
+    border: 1px solid hsla(217, 10%, 80%, 0.35);
+    box-shadow:
+        0 0 0 0 transparent,
+        inset 0 1px 0 hsla(0,0%,100%,0.06);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.component-card:hover .comp-3d-wrap {
+    border-color: var(--accent-primary);
+    box-shadow:
+        0 0 12px hsla(162, 72%, 40%, 0.35),
+        inset 0 1px 0 hsla(0,0%,100%,0.06);
+}
+
+/* Το ίδιο το WebGL canvas */
+.comp-3d-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    /* Απαγορεύει το drag του canvas να παρεμβαίνει στο drag του card */
+    pointer-events: none;
+}
+
+/* Fallback .comp-icon (αν χρησιμοποιηθεί κάπου αλλού) */
 .comp-icon {
     width: 44px;
     height: 44px;

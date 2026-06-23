@@ -13,6 +13,15 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Κύριο αρχείο στυλ -->
     <link rel="stylesheet" href="css/main.css">
+    <!-- Three.js r183 — ES Module import map -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.183.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.183.0/examples/jsm/"
+      }
+    }
+    </script>
     <!-- Monaco Editor Loader από CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.js"></script>
 </head>
@@ -73,70 +82,90 @@
                 </h2>
                 <div class="components-drawer">
                     <div class="component-card draggable" draggable="true" data-type="LED" data-color="red">
-                        <div class="comp-icon led-icon red-led"></div>
+                        <div class="comp-3d-wrap">
+                            <canvas id="preview_LED" class="comp-3d-canvas" data-comp-type="LED" data-color="red" width="80" height="80"></canvas>
+                        </div>
                         <div class="comp-info">
                             <h3>LED (RGB / Πολύχρωμο)</h3>
                             <p>Δεξί κλικ στο καμβά για αλλαγή χρώματος</p>
                         </div>
                     </div>
                     <div class="component-card draggable" draggable="true" data-type="RESISTOR" data-resistance="330">
-                        <div class="comp-icon resistor-icon"></div>
+                        <div class="comp-3d-wrap">
+                            <canvas id="preview_RESISTOR_330" class="comp-3d-canvas" data-comp-type="RESISTOR" data-resistance="330" width="80" height="80"></canvas>
+                        </div>
                         <div class="comp-info">
                             <h3>Αντίσταση 330Ω</h3>
                             <p>Για προστασία LED σε GPIO 3.3V</p>
                         </div>
                     </div>
                     <div class="component-card draggable" draggable="true" data-type="RESISTOR" data-resistance="10000">
-                        <div class="comp-icon resistor-icon pull-res"></div>
+                        <div class="comp-3d-wrap">
+                            <canvas id="preview_RESISTOR_10k" class="comp-3d-canvas" data-comp-type="RESISTOR" data-resistance="10000" width="80" height="80"></canvas>
+                        </div>
                         <div class="comp-info">
                             <h3>Αντίσταση 10kΩ</h3>
                             <p>Pull-up / Pull-down αντίσταση</p>
                         </div>
                     </div>
                     <div class="component-card draggable" draggable="true" data-type="BUTTON">
-                        <div class="comp-icon button-icon"></div>
+                        <div class="comp-3d-wrap">
+                            <canvas id="preview_BUTTON" class="comp-3d-canvas" data-comp-type="BUTTON" width="80" height="80"></canvas>
+                        </div>
                         <div class="comp-info">
                             <h3>Κουμπί (Button)</h3>
                             <p>Διακόπτης push-button εισόδου</p>
                         </div>
                     </div>
                     <div class="component-card draggable" draggable="true" data-type="BUZZER">
-                        <div class="comp-icon buzzer-icon"></div>
+                        <div class="comp-3d-wrap">
+                            <canvas id="preview_BUZZER" class="comp-3d-canvas" data-comp-type="BUZZER" width="80" height="80"></canvas>
+                        </div>
                         <div class="comp-info">
                             <h3>Βομβητής (Buzzer)</h3>
                             <p>Ηχητικός βομβητής (5V / 3.3V)</p>
                         </div>
                     </div>
                     <div class="component-card draggable" draggable="true" data-type="DHT11">
-                        <div class="comp-icon dht-icon"></div>
+                        <div class="comp-3d-wrap">
+                            <canvas id="preview_DHT11" class="comp-3d-canvas" data-comp-type="DHT11" width="80" height="80"></canvas>
+                        </div>
                         <div class="comp-info">
                             <h3>Αισθητήρας DHT11</h3>
                             <p>Θερμοκρασία & Υγρασία</p>
                         </div>
                     </div>
                     <div class="component-card draggable" draggable="true" data-type="PIR">
-                        <div class="comp-icon pir-icon"></div>
+                        <div class="comp-3d-wrap">
+                            <canvas id="preview_PIR" class="comp-3d-canvas" data-comp-type="PIR" width="80" height="80"></canvas>
+                        </div>
                         <div class="comp-info">
                             <h3>Αισθητήρας PIR</h3>
                             <p>Ανίχνευση Κίνησης</p>
                         </div>
                     </div>
                     <div class="component-card draggable" draggable="true" data-type="LDR">
-                        <div class="comp-icon ldr-icon"></div>
+                        <div class="comp-3d-wrap">
+                            <canvas id="preview_LDR" class="comp-3d-canvas" data-comp-type="LDR" width="80" height="80"></canvas>
+                        </div>
                         <div class="comp-info">
                             <h3>Φωτοαντίσταση (LDR)</h3>
                             <p>Ανίχνευση Φωτεινότητας</p>
                         </div>
                     </div>
                     <div class="component-card draggable" draggable="true" data-type="ULTRASONIC">
-                        <div class="comp-icon ultrasonic-icon"></div>
+                        <div class="comp-3d-wrap">
+                            <canvas id="preview_ULTRASONIC" class="comp-3d-canvas" data-comp-type="ULTRASONIC" width="80" height="80"></canvas>
+                        </div>
                         <div class="comp-info">
                             <h3>Υπερήχων (Ultrasonic)</h3>
                             <p>Απόσταση HC-SR04</p>
                         </div>
                     </div>
                     <div class="component-card draggable" draggable="true" data-type="POTENTIOMETER">
-                        <div class="comp-icon potentiometer-icon"></div>
+                        <div class="comp-3d-wrap">
+                            <canvas id="preview_POTENTIOMETER" class="comp-3d-canvas" data-comp-type="POTENTIOMETER" width="80" height="80"></canvas>
+                        </div>
                         <div class="comp-info">
                             <h3>Ποτενσιόμετρο</h3>
                             <p>Μεταβλητή Αντίσταση (Analog)</p>
@@ -312,5 +341,23 @@
     <script src="js/breadboard.js"></script>
     <script src="js/editor.js"></script>
     <script src="js/app.js"></script>
+    <!-- Three.js 3D Component Previews — φορτώνεται ως ES module -->
+    <script type="module">
+        import * as THREE from "three";
+        // Εκθέτουμε globally ώστε το three_previews.js να έχει πρόσβαση
+        window.THREE = THREE;
+        // Φόρτωση του script μετά το THREE
+        const script = document.createElement("script");
+        script.src = "js/three_previews.js";
+        script.onload = () => {
+            // Μικρή καθυστέρηση για να σιγουρευτούμε ότι το DOM είναι έτοιμο
+            requestAnimationFrame(() => {
+                if (window.ThreePreviews) {
+                    window.ThreePreviews.init();
+                }
+            });
+        };
+        document.body.appendChild(script);
+    </script>
 </body>
 </html>
