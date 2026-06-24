@@ -15,6 +15,7 @@ namespace RpiEmulatorDesktop
         private double _sensorValue2 = 50.0; // Δευτερεύουσα τιμή για DHT11 (υγρασία)
         private double _x = 200;
         private double _y = 100;
+        private double _brightness = 1.0;    // Η φωτεινότητα του LED (0.0 έως 1.0) για υποστήριξη PWM
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -98,6 +99,20 @@ namespace RpiEmulatorDesktop
                 if (_isPressed != value)
                 {
                     _isPressed = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        // Η φωτεινότητα του LED για υποστήριξη PWM (0.0 έως 1.0)
+        public double Brightness
+        {
+            get => _brightness;
+            set
+            {
+                if (Math.Abs(_brightness - value) > 0.01)
+                {
+                    _brightness = value;
                     OnPropertyChanged();
                 }
             }

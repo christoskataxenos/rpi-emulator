@@ -611,15 +611,75 @@ const App = {
         const btn_clear_console = document.getElementById("btn-clear-console");
         const btn_reset_code = document.getElementById("btn-reset-code");
         
-        // Κουμπιά Save / Load
+        // Κουμπιά Save / Load (Από το παλιό toolbar, αν υπάρχουν)
         const btn_save = document.getElementById("btn-save-project");
         const btn_load = document.getElementById("btn-load-project");
         const file_load = document.getElementById("file-load-project");
         
-        btn_save.addEventListener("click", () => this.save_project());
-        btn_load.addEventListener("click", () => file_load.click());
-        file_load.addEventListener("change", (e) => this.load_project(e));
+        if (btn_save) btn_save.addEventListener("click", () => this.save_project());
+        if (btn_load) btn_load.addEventListener("click", () => file_load.click());
+        if (file_load) file_load.addEventListener("change", (e) => this.load_project(e));
+
+        // --- Menu Bar Bindings ---
+        const menu_new = document.getElementById("menu-new");
+        const menu_load = document.getElementById("menu-load");
+        const menu_save = document.getElementById("menu-save");
+        const menu_exit = document.getElementById("menu-exit");
         
+        const menu_undo = document.getElementById("menu-undo");
+        const menu_clear = document.getElementById("menu-clear");
+        
+        const menu_theme = document.getElementById("menu-theme");
+        const menu_toggle_gpio = document.getElementById("menu-toggle-gpio");
+        const menu_toggle_console = document.getElementById("menu-toggle-console");
+
+        if (menu_new) menu_new.addEventListener("click", () => {
+            this.clear_circuit();
+            this.load_scenario(this.current_scenario_id, true);
+        });
+        if (menu_load) menu_load.addEventListener("click", () => file_load.click());
+        if (menu_save) menu_save.addEventListener("click", () => this.save_project());
+        if (menu_exit) menu_exit.addEventListener("click", () => window.close());
+        
+        if (menu_undo) menu_undo.addEventListener("click", () => ConsoleLogger.system("Η αναίρεση δεν έχει υλοποιηθεί ακόμα."));
+        if (menu_clear) menu_clear.addEventListener("click", () => this.clear_circuit());
+        
+        if (menu_theme) {
+            menu_theme.addEventListener("click", () => {
+                const act_theme = document.getElementById("act-btn-theme");
+                if (act_theme) {
+                    act_theme.click(); // Χρησιμοποιούμε την υπάρχουσα λογική εναλλαγής
+                } else {
+                    const is_light = document.body.classList.contains("light-theme");
+                    if (is_light) {
+                        document.body.classList.remove("light-theme");
+                        document.body.classList.add("dark-theme");
+                        if (CodeEditorManager.editor && typeof monaco !== "undefined") monaco.editor.setTheme("vscode-dark-theme");
+                    } else {
+                        document.body.classList.remove("dark-theme");
+                        document.body.classList.add("light-theme");
+                        if (CodeEditorManager.editor && typeof monaco !== "undefined") monaco.editor.setTheme("vscode-light-theme");
+                    }
+                }
+            });
+        }
+        
+        if (menu_toggle_gpio) {
+            menu_toggle_gpio.addEventListener("click", () => {
+                const panel = document.getElementById("gpio-monitor-panel");
+                const is_hidden = panel.classList.contains("hidden");
+                this.toggle_footer_panel("gpio", !is_hidden);
+            });
+        }
+        
+        if (menu_toggle_console) {
+            menu_toggle_console.addEventListener("click", () => {
+                const panel = document.getElementById("terminal-panel");
+                const is_hidden = panel.classList.contains("hidden");
+                this.toggle_footer_panel("console", !is_hidden);
+            });
+        }
+
         // Λίστα Σεναρίων (Η σύνδεση γίνεται πλέον δυναμικά στο load_scenarios_list)
 
         // Κουμπί Run Code

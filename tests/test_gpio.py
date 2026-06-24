@@ -142,3 +142,33 @@ def test_api_load_circuit():
     assert any(c["id"] == "LED1" for c in components)
     assert any(c["id"] == "R1" for c in components)
 
+
+# 5. Δοκιμή διάδοσης σήματος PWM και ρύθμισης φωτεινότητας LED
+def test_physics_engine_pwm_led_fade():
+    # Αρχικοποίηση κυκλώματος και μηχανής φυσικής
+    circuit = CircuitManager()
+    registry = GPIORegistry()
+    physics = PhysicsEngine(registry)
+    
+    # Προσθήκη LED και αντίστασης
+    circuit.add_component("LED1", "LED")
+    circuit.add_component("R1", "RESISTOR")
+    
+    # Σύνδεση: pin12 (GPIO 18, PWM) -> R1 -> LED1 -> pin6 (GND)
+    circuit.add_wire("RPI", "pin12", "R1", "terminal_a")
+    circuit.add_wire("R1", "terminal_b", "LED1", "anode")
+    circuit.add_wire("LED1", "cathode", "RPI", "pin6")
+    
+    # Ρύθμιση του pin12 ως OUTPUT με ενεργό PWM στο 50.0%
+    registry.set_pin_mode(12, "OUTPUT")
+    registry.set_pin_pwm(12, is_pwm = True, duty_cycle = 50.0, frequency = 100.0)
+    
+    # Επίλυση του κυκλώματος
+    res = physics.solve_circuit(circuit)
+    
+    # Επιβεβαίωση ότι δεν υπάρχουν σφάλματα
+    assert len(res["warnings"]) == 0
+    # Το LED πρέπει να είναι αναμμένο με ένταση 50.0%
+    assert res["component_states"]["LED1"] == "lit:50.0"
+
+

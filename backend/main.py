@@ -1,4 +1,10 @@
 # Εισαγωγή των απαραίτητων πακέτων για το FastAPI και την ασύγχρονη λειτουργία
+import sys
+import os
+
+# Προσθήκη του root directory στο sys.path ώστε να λειτουργούν τα imports "from backend..."
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,7 +12,6 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import asyncio
 import json
-import os
 from typing import List, Dict, Set
 
 # Εισαγωγή των κλάσεων του εξομοιωτή μας
@@ -17,6 +22,18 @@ from backend.sandbox.executor import CodeExecutor
 
 # Δημιουργία της εφαρμογής FastAPI
 app = FastAPI(title = "Raspberry Pi Educational Simulator API")
+
+# Setup a custom exception handler to swallow ConnectionResetError (WinError 10054) spam on Windows
+def silence_connection_reset_errors(loop, context):
+    exception = context.get('exception')
+    if isinstance(exception, ConnectionResetError):
+        return
+    loop.default_exception_handler(context)
+
+@app.on_event("startup")
+async def startup_event():
+    loop = asyncio.get_running_loop()
+    loop.set_exception_handler(silence_connection_reset_errors)
 
 # Ρύθμιση CORS ώστε το frontend να μπορεί να καλεί το API
 app.add_middleware(
@@ -487,3 +504,8 @@ app.mount("/scenarios", StaticFiles(directory = scenarios_dir), name = "scenario
 # Προσάρτηση των στατικών αρχείων του frontend για την εξυπηρέτηση του web UI
 frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
 app.mount("/", StaticFiles(directory = frontend_dir, html = True), name = "static")
+
+if __name__ == "__main__":
+    import uvicorn
+    # Εκκίνηση του server όταν το αρχείο εκτελείται απευθείας
+    uvicorn.run(app, host="127.0.0.1", port=8000)

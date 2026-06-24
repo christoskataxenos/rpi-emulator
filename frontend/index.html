@@ -27,6 +27,43 @@
 </head>
 <body class="dark-theme">
     <div id="app-container">
+        <!-- Native-like Menu Bar -->
+        <nav id="top-menu-bar">
+            <div class="menu-item" tabindex="0">
+                <span>Αρχείο</span>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" id="menu-new"><i class="fa-solid fa-file"></i> Νέο Project</div>
+                    <div class="dropdown-item" id="menu-load"><i class="fa-solid fa-folder-open"></i> Άνοιγμα...</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item" id="menu-save"><i class="fa-solid fa-floppy-disk"></i> Αποθήκευση</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item" id="menu-exit"><i class="fa-solid fa-right-from-bracket"></i> Έξοδος</div>
+                </div>
+            </div>
+            <div class="menu-item" tabindex="0">
+                <span>Επεξεργασία</span>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" id="menu-undo"><i class="fa-solid fa-rotate-left"></i> Αναίρεση</div>
+                    <div class="dropdown-item" id="menu-clear"><i class="fa-solid fa-trash-can"></i> Καθαρισμός Πλακέτας</div>
+                </div>
+            </div>
+            <div class="menu-item" tabindex="0">
+                <span>Προβολή</span>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" id="menu-theme"><i class="fa-solid fa-palette"></i> Εναλλαγή Θέματος</div>
+                    <div class="dropdown-item" id="menu-toggle-gpio"><i class="fa-solid fa-microchip"></i> Εμφάνιση GPIO</div>
+                    <div class="dropdown-item" id="menu-toggle-console"><i class="fa-solid fa-terminal"></i> Εμφάνιση Κονσόλας</div>
+                </div>
+            </div>
+            <div class="menu-item" tabindex="0">
+                <span>Βοήθεια</span>
+                <div class="dropdown-menu">
+                    <div class="dropdown-item" id="menu-docs"><i class="fa-solid fa-book"></i> Τεκμηρίωση</div>
+                    <div class="dropdown-item" id="menu-about"><i class="fa-solid fa-circle-info"></i> Σχετικά</div>
+                </div>
+            </div>
+        </nav>
+
         <!-- Κύριο Header της Εφαρμογής -->
         <header id="main-header" class="glass-panel">
             <div class="header-logo">
@@ -54,12 +91,6 @@
 
                 
                 <div class="control-actions">
-                    <button id="btn-save-project" class="btn btn-secondary" title="Αποθήκευση Project (Κύκλωμα + Κώδικας)">
-                        <i class="fa-solid fa-floppy-disk"></i> Save
-                    </button>
-                    <button id="btn-load-project" class="btn btn-secondary" title="Φόρτωση Project">
-                        <i class="fa-solid fa-folder-open"></i> Load
-                    </button>
                     <input type="file" id="file-load-project" accept=".rpi,.json" style="display: none;">
                     
                     <button id="btn-run" class="btn btn-success" title="Εκτέλεση κώδικα Python">
@@ -67,9 +98,6 @@
                     </button>
                     <button id="btn-stop" class="btn btn-danger disabled" title="Διακοπή εκτέλεσης κώδικα" disabled>
                         <i class="fa-solid fa-stop"></i> Stop
-                    </button>
-                    <button id="btn-clear" class="btn btn-secondary" title="Καθαρισμός κυκλώματος">
-                        <i class="fa-solid fa-trash-can"></i> Clear Grid
                     </button>
                 </div>
             </div>

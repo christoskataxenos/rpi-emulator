@@ -41,7 +41,16 @@ The application has been radically upgraded. The old desktop implementation with
 
 ### 🔒 Secure & Stable Code Executor (Sandbox Freeze Fix)
 - **Uvicorn Reload Protection**: Student code now runs in an isolated temporary system directory (`tempfile.gettempdir()`) instead of the project's working folder. This prevents the uvicorn watchdog from causing continuous backend restarts and freezes.
+- **Clean Event Loop**: Implemented custom exception handlers to silence noisy asyncio `ConnectionResetError` (WinError 10054) spam on Windows, ensuring pristine server logs.
 - **Real-time WebSockets**: The shims immediately send their states to the backend, which in turn broadcasts them via WebSockets to the WPF UI.
+
+### 🎨 Advanced Visuals & UI/UX Experience
+- **Premium 3D Previews**: The component sidebar features interactive, GPU-accelerated 3D previews for hardware components powered by Three.js.
+- **Dynamic Canvas Controls**: Seamless zooming, panning, and resizable layout splitters allow full workspace customization for complex circuits.
+- **Interactive Simulation**: Precise mouse interaction with buttons and robust UX for adjusting environmental sensor parameters in real-time.
+
+### 🚀 Automated One-Click Launcher
+- **`run.bat` & PowerShell Integration**: A robust automatic starter script (`Start-RpiEmulator.ps1`) gracefully checks for system dependencies (Python, .NET SDK), dynamically locates installation paths, auto-installs Python packages, and launches both the backend and frontend simultaneously without manual intervention.
 
 ### 🌡️ Rich Library of Components & Sensors
 - **Basic Components**: LEDs (red, green, yellow), Resistors (330Ω, 10kΩ), Push Buttons, Buzzers.

@@ -100,7 +100,10 @@ class PhysicsEngine:
                         else:
                             pin_state = self.registry.pins.get(pin_num)
                             if pin_state and pin_state.mode == "OUTPUT":
-                                new_state = pin_state.state
+                                if pin_state.is_pwm:
+                                    new_state = LogicState.HIGH if pin_state.pwm_duty_cycle > 0 else LogicState.LOW
+                                else:
+                                    new_state = pin_state.state
                                 
                         if new_state != old_state:
                             driving_states[ref] = new_state
@@ -184,6 +187,86 @@ class PhysicsEngine:
                 "message": f"Το κύκλωμα δεν ισορρόπησε μετά από {max_ticks} ticks (πιθανή ταλάντωση)."
             })
 
+        # Υπολογισμός και διάδοση των PWM duty cycles μετά την ισορροπία του κυκλώματος
+        # 1. Καθορισμός των αρχικών πηγών PWM
+        ref_duty = {}
+        for comp in circuit.components.values():
+            if comp.type == "RPI":
+                gnd_pins = {6, 9, 14, 20, 25, 30, 34, 39}
+                five_v_pins = {2, 4}
+                three_v_pins = {1, 17}
+                for term in comp.terminals:
+                    pin_num = int(term.replace("pin", ""))
+                    ref = (comp.id, term)
+                    if pin_num in gnd_pins:
+                        ref_duty[ref] = 0.0
+                    elif pin_num in five_v_pins or pin_num in three_v_pins:
+                        ref_duty[ref] = 100.0
+                    else:
+                        pin_state = self.registry.pins.get(pin_num)
+                        if pin_state and pin_state.mode == "OUTPUT":
+                            if pin_state.is_pwm:
+                                ref_duty[ref] = pin_state.pwm_duty_cycle
+                            else:
+                                ref_duty[ref] = 100.0 if pin_state.state == LogicState.HIGH else 0.0
+
+        # 2. Χτίσιμο του γράφου συνδέσεων (Adjacency List)
+        adj = {}
+        def add_edge(u, v):
+            adj.setdefault(u, []).append(v)
+            adj.setdefault(v, []).append(u)
+
+        # Συνδέσεις λόγω κόμβων (wires)
+        for node in nodes:
+            node_list = list(node)
+            for i in range(len(node_list) - 1):
+                add_edge(node_list[i], node_list[i + 1])
+
+        # Συνδέσεις εντός εξαρτημάτων (Resistors, Buttons)
+        for comp in circuit.components.values():
+            if comp.type == "RESISTOR":
+                add_edge((comp.id, "terminal_a"), (comp.id, "terminal_b"))
+            elif comp.type == "BUTTON":
+                if comp.properties.get("pressed", False):
+                    add_edge((comp.id, "terminal_a"), (comp.id, "terminal_b"))
+
+        # 3. Εύρεση συνεκτικών συνιστωσών (Connected Components) και διάδοση του duty cycle
+        visited = set()
+        pwm_states = {}
+        
+        all_refs = []
+        for comp in circuit.components.values():
+            for term in comp.terminals:
+                all_refs.append((comp.id, term))
+
+        for ref in all_refs:
+            if ref not in visited:
+                component = []
+                queue = [ref]
+                visited.add(ref)
+                head = 0
+                while head < len(queue):
+                    u = queue[head]
+                    component.append(u)
+                    head += 1
+                    for v in adj.get(u, []):
+                        if v not in visited:
+                            visited.add(v)
+                            queue.append(v)
+                
+                max_duty = 0.0
+                has_high_source = False
+                for u in component:
+                    if u in ref_duty:
+                        u_state = driving_states.get(u, LogicState.HIGH_Z)
+                        if u_state == LogicState.HIGH:
+                            max_duty = max(max_duty, ref_duty[u])
+                            has_high_source = True
+                            
+                resolved_duty = max_duty if has_high_source else 0.0
+                for u in component:
+                    pwm_states[u] = resolved_duty
+
         # Τελική αξιολόγηση οπτικών καταστάσεων (LEDs, Buzzers)
         for comp in circuit.components.values():
             if comp.type == "LED":
@@ -191,7 +274,11 @@ class PhysicsEngine:
                 cathode = comp.terminal_states.get("cathode", LogicState.HIGH_Z)
                 # Το LED ανάβει ψηφιακά όταν η Άνοδος είναι HIGH και η Κάθοδος LOW
                 if anode == LogicState.HIGH and cathode == LogicState.LOW:
-                    component_states[comp.id] = "lit"
+                    duty = pwm_states.get((comp.id, "anode"), 100.0)
+                    if duty == 100.0:
+                        component_states[comp.id] = "lit"
+                    else:
+                        component_states[comp.id] = f"lit:{duty}"
                 else:
                     component_states[comp.id] = "off"
                     
@@ -236,6 +323,8 @@ class PhysicsEngine:
                     "message": "Ανιχνεύθηκε βραχυκύκλωμα (Διένεξη HIGH και LOW στο ίδιο καλώδιο)!"
                 })
                 break
+
+
 
         return {
             "component_states": component_states,

@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Shapes;
 
 namespace RpiEmulatorDesktop
@@ -865,10 +866,36 @@ namespace RpiEmulatorDesktop
                         var comp = Components.FirstOrDefault(c => c.Id == compId);
                         if (comp != null)
                         {
-                            comp.State = compState;
-                            if (comp.Type == "BUTTON")
+                            if (comp.Type == "LED")
                             {
-                                comp.IsPressed = compState == "pressed";
+                                // Αν η κατάσταση ξεκινά με "lit", το LED είναι αναμμένο (πιθανώς με PWM duty cycle, π.χ. "lit:50.0")
+                                if (compState.StartsWith("lit"))
+                                {
+                                    comp.State = "lit";
+                                    double duty = 100.0;
+                                    if (compState.Contains(":"))
+                                    {
+                                        var parts = compState.Split(':');
+                                        if (parts.Length > 1 && double.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double parsedDuty))
+                                        {
+                                            duty = parsedDuty;
+                                        }
+                                    }
+                                    comp.Brightness = duty / 100.0;
+                                }
+                                else
+                                {
+                                    comp.State = "off";
+                                    comp.Brightness = 0.0;
+                                }
+                            }
+                            else
+                            {
+                                comp.State = compState;
+                                if (comp.Type == "BUTTON")
+                                {
+                                    comp.IsPressed = compState == "pressed";
+                                }
                             }
                         }
                     }
@@ -1066,9 +1093,14 @@ namespace RpiEmulatorDesktop
         // Event Handler: MouseDown πάνω σε εξάρτημα για Dragging
         private void Component_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            // Αν το κλικ έγινε σε Button (π.χ. "Press") ή Ellipse (ακροδέκτης), αφήνουμε το event να συνεχίσει
-            if (e.OriginalSource is Button || e.OriginalSource is Ellipse)
-                return;
+            // Αν το κλικ έγινε σε Button (π.χ. "Press"), Ellipse (ακροδέκτης), ή σε κάποιο εσωτερικό τους στοιχείο, αφήνουμε το event να συνεχίσει
+            DependencyObject obj = e.OriginalSource as DependencyObject;
+            while (obj != null && obj != sender)
+            {
+                if (obj is Button || obj is Ellipse)
+                    return;
+                obj = VisualTreeHelper.GetParent(obj);
+            }
 
             if (sender is Border border && border.DataContext is CircuitComponent comp)
             {
