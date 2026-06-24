@@ -1646,7 +1646,7 @@ namespace RpiEmulatorDesktop
             }
         }
 
-        #endregion
+
 
         #region Βοηθητικές Μέθοδοι UI
 

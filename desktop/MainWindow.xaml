@@ -579,9 +579,31 @@
                                                         </Ellipse>
 
                                                         <!-- BUTTON Visual -->
-                                                        <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,8" Width="18" Height="18">
-                                                            <Grid.Style>
-                                                                <Style TargetType="Grid">
+                                                        <Button HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,8" Width="18" Height="18"
+                                                                PreviewMouseDown="CompButton_PreviewMouseDown"
+                                                                PreviewMouseUp="CompButton_PreviewMouseUp">
+                                                            <Button.Template>
+                                                                <ControlTemplate TargetType="Button">
+                                                                    <Border Background="#1C1C1E" BorderBrush="#3A3A3C" BorderThickness="1" CornerRadius="2">
+                                                                        <Ellipse Width="10" Height="10" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                                            <Ellipse.Style>
+                                                                                <Style TargetType="Ellipse">
+                                                                                    <Setter Property="Fill" Value="#FF453A"/>
+                                                                                    <Style.Triggers>
+                                                                                        <DataTrigger Binding="{Binding IsPressed}" Value="True">
+                                                                                            <Setter Property="Fill" Value="#BF261F"/>
+                                                                                            <Setter Property="Width" Value="8"/>
+                                                                                            <Setter Property="Height" Value="8"/>
+                                                                                        </DataTrigger>
+                                                                                    </Style.Triggers>
+                                                                                </Style>
+                                                                            </Ellipse.Style>
+                                                                        </Ellipse>
+                                                                    </Border>
+                                                                </ControlTemplate>
+                                                            </Button.Template>
+                                                            <Button.Style>
+                                                                <Style TargetType="Button">
                                                                     <Setter Property="Visibility" Value="Collapsed"/>
                                                                     <Style.Triggers>
                                                                         <DataTrigger Binding="{Binding Type}" Value="BUTTON">
@@ -589,24 +611,8 @@
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
                                                                 </Style>
-                                                            </Grid.Style>
-                                                            <Border Background="#1C1C1E" BorderBrush="#3A3A3C" BorderThickness="1" CornerRadius="2">
-                                                                <Ellipse Width="10" Height="10" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                                    <Ellipse.Style>
-                                                                        <Style TargetType="Ellipse">
-                                                                            <Setter Property="Fill" Value="#FF453A"/>
-                                                                            <Style.Triggers>
-                                                                                <DataTrigger Binding="{Binding IsPressed}" Value="True">
-                                                                                    <Setter Property="Fill" Value="#BF261F"/>
-                                                                                    <Setter Property="Width" Value="8"/>
-                                                                                    <Setter Property="Height" Value="8"/>
-                                                                                </DataTrigger>
-                                                                            </Style.Triggers>
-                                                                        </Style>
-                                                                    </Ellipse.Style>
-                                                                </Ellipse>
-                                                            </Border>
-                                                        </Grid>
+                                                            </Button.Style>
+                                                        </Button>
 
                                                         <!-- BUZZER Visual -->
                                                         <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,8" Width="18" Height="18">
