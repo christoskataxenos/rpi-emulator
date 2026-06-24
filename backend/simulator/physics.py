@@ -70,6 +70,11 @@ class PhysicsEngine:
         
         node_states = [LogicState.HIGH_Z] * len(nodes)
         
+        # Αρχικοποίηση όλων των terminal states των εξαρτημάτων σε HIGH_Z για καθαρή διάδοση (propagation)
+        for comp in circuit.components.values():
+            for term in comp.terminals:
+                comp.terminal_states[term] = LogicState.HIGH_Z
+        
         # Επανάληψη (ticks) μέχρι το κύκλωμα να ισορροπήσει ή να φτάσουμε το όριο
         changed = False
         for tick in range(max_ticks):
@@ -223,6 +228,9 @@ class PhysicsEngine:
         # Έλεγχος για βραχυκυκλώματα
         for node_idx, state in enumerate(node_states):
             if state == LogicState.ERROR:
+                conflicting_node = nodes[node_idx]
+                node_driving = {ref: driving_states.get(ref, LogicState.HIGH_Z).name for ref in conflicting_node}
+                print(f"[Physics Warning] SHORT_CIRCUIT detected on Node {node_idx}: {conflicting_node} with drivers: {node_driving}")
                 warnings.append({
                     "type": "SHORT_CIRCUIT",
                     "message": "Ανιχνεύθηκε βραχυκύκλωμα (Διένεξη HIGH και LOW στο ίδιο καλώδιο)!"

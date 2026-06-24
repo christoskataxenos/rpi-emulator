@@ -69,32 +69,32 @@ const BreadboardCanvas = {
         this.canvas.width = container.clientWidth;
         this.canvas.height = container.clientHeight;
         
-        // Dynamic fit to screen
-        this.rpi_layout.y = 15;
-        this.rpi_layout.height = this.canvas.height - 30;
-        this.rpi_layout.width = 160;
+        // Οριζόντια διάταξη του Raspberry Pi Board στο πάνω μέρος του canvas
         this.rpi_layout.x = 20;
+        this.rpi_layout.y = 15;
+        this.rpi_layout.width = this.canvas.width - 40;
+        this.rpi_layout.height = 120;
     },
 
-    // Υπολογισμός των συντεταγμένων των 40 pins του Pi
+    // Υπολογισμός των συντεταγμένων των 40 pins του Pi (Οριζόντια διάταξη)
     calculate_rpi_pins() {
         const rpi = this.rpi_layout;
-        const pin_rows = 20;
-        const start_y = rpi.y + 40;
-        const spacing_y = (rpi.height - 80) / (pin_rows - 1);
+        const pin_cols = 20;
+        const start_x = rpi.x + 45;
+        const spacing_x = (rpi.width - 90) / (pin_cols - 1);
         
-        // Row 1 (Αριστερή στήλη - Pins 1, 3, 5...)
-        const col1_x = rpi.x + 50;
-        // Row 2 (Δεξιά στήλη - Pins 2, 4, 6...)
-        const col2_x = rpi.x + 80;
+        // Σειρά 1 (Πάνω σειρά - Pins 1, 3, 5...)
+        const row1_y = rpi.y + 45;
+        // Σειρά 2 (Κάτω σειρά - Pins 2, 4, 6...)
+        const row2_y = rpi.y + 75;
 
         for (let i = 0; i < this.rpi_pin_definitions.length; i++) {
             const def = this.rpi_pin_definitions[i];
-            const row = Math.floor(i / 2);
+            const col = Math.floor(i / 2);
             const is_even = i % 2 !== 0;
             
-            const px = is_even ? col2_x : col1_x;
-            const py = start_y + row * spacing_y;
+            const px = start_x + col * spacing_x;
+            const py = is_even ? row2_y : row1_y;
             
             rpi.pins[def.num] = {
                 x: px,
@@ -552,7 +552,7 @@ const BreadboardCanvas = {
         // Σχεδίαση GPIO Header Base (Μαύρο πλαστικό)
         ctx.fillStyle = "hsl(0, 0%, 8%)";
         ctx.beginPath();
-        ctx.roundRect(rpi.x + 38, rpi.y + 25, 54, rpi.height - 50, 4);
+        ctx.roundRect(rpi.x + 30, rpi.y + 35, rpi.width - 60, 50, 4);
         ctx.fill();
 
         // Σχεδίαση των 40 Pins
@@ -578,16 +578,16 @@ const BreadboardCanvas = {
             // Σχεδίαση μικρών ετικετών (labels) δίπλα στα pins
             ctx.fillStyle = "hsla(0, 0%, 100%, 0.35)";
             ctx.font = "bold 7.5px 'JetBrains Mono'";
-            ctx.textAlign = pin_num % 2 === 0 ? "left" : "right";
+            ctx.textAlign = "center";
             
-            // Text offset
-            const offset_x = pin_num % 2 === 0 ? 8 : -8;
+            // Text offset: πάνω από τα pins για την πάνω σειρά, κάτω από τα pins για την κάτω σειρά
+            const offset_y = pin_num % 2 === 0 ? 20 : -10;
             let display_name = pin.name;
             if (display_name.startsWith("GPIO ")) {
                 display_name = "G" + display_name.replace("GPIO ", "");
             }
             
-            ctx.fillText(display_name, pin.x + offset_x, pin.y + 2.5);
+            ctx.fillText(display_name, pin.x, pin.y + offset_y);
 
             // Αν είναι το hovered pin, σχεδιάζουμε ένα δακτύλιο
             if (this.hovered_terminal && this.hovered_terminal.comp_id === "RPI" && this.hovered_terminal.name === `pin${pin_num}`) {
@@ -599,15 +599,11 @@ const BreadboardCanvas = {
             }
         }
         
-        // Σχεδίαση κειμένου RPi Label
+        // Σχεδίαση κειμένου RPi Label (Οριζόντια στο πάνω αριστερό μέρος)
         ctx.fillStyle = "hsla(0, 0%, 100%, 0.15)";
-        ctx.font = "bold 18px 'Inter'";
-        ctx.textAlign = "center";
-        ctx.save();
-        ctx.translate(rpi.x + 25, rpi.y + rpi.height / 2);
-        ctx.rotate(-Math.PI / 2);
-        ctx.fillText("RASPBERRY PI", 0, 0);
-        ctx.restore();
+        ctx.font = "bold 16px 'Inter'";
+        ctx.textAlign = "left";
+        ctx.fillText("RASPBERRY PI", rpi.x + 25, rpi.y + 24);
     },
 
     // Σχεδίαση όλων των εξαρτημάτων στο Canvas

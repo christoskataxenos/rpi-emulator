@@ -1,6 +1,6 @@
-from enum import Enum
+from enum import IntEnum
 
-class LogicState(Enum):
+class LogicState(IntEnum):
     LOW = 0
     HIGH = 1
     HIGH_Z = 2
@@ -62,7 +62,12 @@ class GPIORegistry:
     # Μέθοδος για τον ορισμό της κατάστασης ενός pin
     def set_pin_state(self, pin_number: int, state: LogicState):
         if pin_number in self.pins:
-            # Ενημερώνουμε την κατάσταση του pin
+            # Ενημερώνουμε την κατάσταση του pin, μετατρέποντας τυχόν int/bool σε LogicState
+            if isinstance(state, int) and not isinstance(state, LogicState):
+                try:
+                    state = LogicState(state)
+                except ValueError:
+                    pass
             self.pins[pin_number].state = state
 
     # Μέθοδος για τη λήψη της τρέχουσας κατάστασης ενός pin

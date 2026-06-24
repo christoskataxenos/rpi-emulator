@@ -27,7 +27,7 @@ const CodeEditorManager = {
             if (this.editor) return; // Έχει ήδη ενεργοποιηθεί ο fallback editor
 
             // Ορισμός του θέματος VS Code Light
-            monaco.editor.defineTheme("rpi-dark-theme", {
+            monaco.editor.defineTheme("vscode-light-theme", {
                 base: "vs",
                 inherit: true,
                 rules: [
@@ -41,16 +41,46 @@ const CodeEditorManager = {
                 }
             });
 
+            // Ορισμός του θέματος VS Code Dark
+            monaco.editor.defineTheme("vscode-dark-theme", {
+                base: "vs-dark",
+                inherit: true,
+                rules: [
+                    { token: "comment", foreground: "6A9955" }, // VS Code green comments
+                    { token: "keyword", foreground: "569CD6" }, // VS Code keyword blue
+                    { token: "string", foreground: "CE9178" },  // VS Code string orange
+                    { token: "number", foreground: "B5CEA8" },  // VS Code number light green
+                    { token: "type", foreground: "4EC9B0" }     // VS Code type teal
+                ],
+                colors: {
+                    "editor.background": "#1e1e1e",
+                    "editor.foreground": "#d4d4d4",
+                    "editor.lineHighlightBackground": "#2d2d2d",
+                    "editorCursor.foreground": "#aeafad",
+                    "editorLineNumber.foreground": "#858585",
+                    "editorLineNumber.activeForeground": "#c6c6c6"
+                }
+            });
+
             // Δημιουργία του Monaco Editor
+            const activeTheme = document.body.classList.contains("light-theme") ? "vscode-light-theme" : "vscode-dark-theme";
             this.editor = monaco.editor.create(document.getElementById("code-editor-container"), {
                 value: "# Γράψτε τον κώδικα Python σας εδώ\n",
                 language: "python",
-                theme: "rpi-dark-theme",
+                theme: activeTheme,
                 automaticLayout: true,
                 fontSize: 13,
                 fontFamily: "'JetBrains Mono', monospace",
                 lineNumbers: "on",
-                minimap: { enabled: false }
+                minimap: { enabled: true }
+            });
+
+            // Παρακολούθηση της θέσης του δρομέα για ενημέρωση του status bar
+            this.editor.onDidChangeCursorPosition((e) => {
+                const statusBarLnCol = document.getElementById("status-ln-col");
+                if (statusBarLnCol) {
+                    statusBarLnCol.textContent = `Ln ${e.position.lineNumber}, Col ${e.position.column}`;
+                }
             });
 
             // Εγγραφή των προτάσεων αυτόματης συμπλήρωσης (IntelliSense)
@@ -84,8 +114,8 @@ const CodeEditorManager = {
                 font-size: 13px;
                 padding: 10px;
                 border: none;
-                background: #f5f7fa;
-                color: #333;
+                background: var(--bg-dark);
+                color: var(--text-primary);
                 outline: none;
             " placeholder="# Γράψτε τον κώδικα Python σας εδώ..."></textarea>
         `;
@@ -119,8 +149,44 @@ const CodeEditorManager = {
     set_code(code) {
         if (this.editor) {
             this.editor.setValue(code);
+            // Αυτόματη ανίχνευση και αλλαγή γλώσσας
+            if (code.includes("#include") || code.includes("void setup") || code.includes("int main")) {
+                this.set_language("cpp");
+            } else {
+                this.set_language("python");
+            }
         } else {
             this.pending_code = code;
+        }
+    },
+
+    // Αλλαγή της γλώσσας του editor (π.χ. python, cpp)
+    set_language(language) {
+        if (this.editor && typeof monaco !== "undefined") {
+            try {
+                monaco.editor.setModelLanguage(this.editor.getModel(), language);
+            } catch (error) {
+                console.error("Σφάλμα κατά την αλλαγή γλώσσας του editor:", error);
+            }
+        }
+        
+        // Ενημέρωση του ενεργού Tab (Όνομα & Εικονίδιο)
+        const tab_filename = document.getElementById("editor-tab-filename");
+        const tab_icon = document.getElementById("editor-tab-icon");
+        if (tab_filename && tab_icon) {
+            if (language === "cpp") {
+                tab_filename.textContent = "main.cpp";
+                tab_icon.className = "fa-solid fa-file-code file-icon";
+            } else {
+                tab_filename.textContent = "main.py";
+                tab_icon.className = "fa-brands fa-python file-icon";
+            }
+        }
+
+        // Ενημέρωση του Status Bar
+        const lang_label = document.getElementById("status-lang");
+        if (lang_label) {
+            lang_label.textContent = language === "cpp" ? "C++ (transpiled)" : "Python";
         }
     },
 

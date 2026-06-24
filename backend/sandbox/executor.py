@@ -4,6 +4,7 @@ import os
 import sys
 import uuid
 import threading
+import tempfile
 from typing import Dict, Callable, Optional
 
 # Λεξικό για την αποθήκευση των ενεργών διεργασιών ανά session id
@@ -21,9 +22,15 @@ class CodeExecutor:
         # Δημιουργία ενός μοναδικού αναγνωριστικού για αυτή την εκτέλεση
         session_id = str(uuid.uuid4())
         
-        # Ορισμός του προσωρινού αρχείου κώδικα
-        temp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "runs")
-        os.makedirs(temp_dir, exist_ok = True)
+        # Ανίχνευση και μετάφραση αν ο κώδικας είναι C/C++
+        from backend.sandbox.transpiler import is_c_code, transpile_c_to_python
+        if is_c_code(code_content):
+            print(f"[Executor Debug] Detected C/C++ code, transpiling to Python...")
+            code_content = transpile_c_to_python(code_content)
+            
+        # Ορισμός του προσωρινού αρχείου κώδικα στο φάκελο Temp του συστήματος
+        # για να αποφευχθεί το αυτόματο reload του uvicorn
+        temp_dir = tempfile.gettempdir()
         
         script_path = os.path.join(temp_dir, f"script_{session_id}.py")
         

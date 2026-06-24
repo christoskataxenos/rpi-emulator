@@ -642,17 +642,119 @@ const App = {
         // Σύνδεση των Tabs
         const tab_circuit = document.getElementById("tab-circuit");
         const tab_editor = document.getElementById("tab-editor");
+        const tab_split = document.getElementById("tab-split");
         
         tab_circuit.addEventListener("click", () => {
             tab_editor.classList.remove("active");
+            if (tab_split) tab_split.classList.remove("active");
             tab_circuit.classList.add("active");
             this.set_workspace_mode("circuit");
         });
         
         tab_editor.addEventListener("click", () => {
             tab_circuit.classList.remove("active");
+            if (tab_split) tab_split.classList.remove("active");
             tab_editor.classList.add("active");
             this.set_workspace_mode("code");
+        });
+
+        if (tab_split) {
+            tab_split.addEventListener("click", () => {
+                tab_circuit.classList.remove("active");
+                tab_editor.classList.remove("active");
+                tab_split.classList.add("active");
+                this.set_workspace_mode("split");
+            });
+        }
+
+        // --- Activity Bar Buttons Binding ---
+        const act_components = document.getElementById("act-btn-components");
+        const act_lessons = document.getElementById("act-btn-lessons");
+        const act_run = document.getElementById("act-btn-run");
+        const act_terminal = document.getElementById("act-btn-terminal");
+        const act_gpio = document.getElementById("act-btn-gpio");
+        const act_theme = document.getElementById("act-btn-theme");
+
+        if (act_components) {
+            act_components.addEventListener("click", () => {
+                const sidebar = document.getElementById("sidebar-left");
+                const is_hidden = sidebar.classList.contains("hidden");
+                this.toggle_sidebar("left", !is_hidden);
+            });
+        }
+
+        if (act_lessons) {
+            act_lessons.addEventListener("click", () => {
+                const sidebar = document.getElementById("sidebar-right");
+                const is_hidden = sidebar.classList.contains("hidden");
+                this.toggle_sidebar("right", !is_hidden);
+            });
+        }
+
+        if (act_run) {
+            act_run.addEventListener("click", () => {
+                const is_running = this.active_session_id !== null;
+                if (is_running) {
+                    this.stop_code();
+                } else {
+                    this.run_code();
+                }
+            });
+        }
+
+        if (act_terminal) {
+            act_terminal.addEventListener("click", () => {
+                const panel = document.getElementById("terminal-panel");
+                const is_hidden = panel.classList.contains("hidden");
+                this.toggle_footer_panel("console", !is_hidden);
+            });
+        }
+
+        if (act_gpio) {
+            act_gpio.addEventListener("click", () => {
+                const panel = document.getElementById("gpio-monitor-panel");
+                const is_hidden = panel.classList.contains("hidden");
+                this.toggle_footer_panel("gpio", !is_hidden);
+            });
+        }
+
+        if (act_theme) {
+            act_theme.addEventListener("click", () => {
+                const is_light = document.body.classList.contains("light-theme");
+                if (is_light) {
+                    document.body.classList.remove("light-theme");
+                    document.body.classList.add("dark-theme");
+                    act_theme.innerHTML = '<i class="fa-solid fa-sun"></i>';
+                    if (CodeEditorManager.editor && typeof monaco !== "undefined") {
+                        monaco.editor.setTheme("vscode-dark-theme");
+                    }
+                } else {
+                    document.body.classList.remove("dark-theme");
+                    document.body.classList.add("light-theme");
+                    act_theme.innerHTML = '<i class="fa-solid fa-moon"></i>';
+                    if (CodeEditorManager.editor && typeof monaco !== "undefined") {
+                        monaco.editor.setTheme("vscode-light-theme");
+                    }
+                }
+            });
+        }
+
+        // --- Keyboard Shortcuts (VSCode Style) ---
+        window.addEventListener("keydown", (e) => {
+            // F5: Run, Shift+F5: Stop
+            if (e.key === "F5") {
+                e.preventDefault();
+                if (e.shiftKey) {
+                    this.stop_code();
+                } else {
+                    this.run_code();
+                }
+            }
+            // Ctrl+S: Save Project
+            if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+                e.preventDefault();
+                this.save_project();
+            }
         });
 
         // Σύνδεση των Toggles
@@ -996,17 +1098,50 @@ const App = {
     set_running_state(is_running) {
         const btn_run = document.getElementById("btn-run");
         const btn_stop = document.getElementById("btn-stop");
+        const act_btn_run = document.getElementById("act-btn-run");
+        const status_bar = document.getElementById("vscode-status-bar");
+        const status_env = document.getElementById("status-env");
         
         if (is_running) {
             btn_run.classList.add("disabled");
             btn_run.disabled = true;
             btn_stop.classList.remove("disabled");
             btn_stop.disabled = false;
+            
+            // Ενημέρωση Activity Bar
+            if (act_btn_run) {
+                act_btn_run.innerHTML = "<i class=\"fa-solid fa-stop\" style=\"color: var(--danger);\"></i>";
+                act_btn_run.title = "Διακοπή Κώδικα (Shift+F5)";
+                act_btn_run.classList.add("active");
+            }
+            
+            // Ενημέρωση Status Bar
+            if (status_bar) {
+                status_bar.classList.add("running");
+            }
+            if (status_env) {
+                status_env.innerHTML = "<i class=\"fa-solid fa-spinner fa-spin\"></i> Running";
+            }
         } else {
             btn_run.classList.remove("disabled");
             btn_run.disabled = false;
             btn_stop.classList.add("disabled");
             btn_stop.disabled = true;
+            
+            // Ενημέρωση Activity Bar
+            if (act_btn_run) {
+                act_btn_run.innerHTML = "<i class=\"fa-solid fa-play\"></i>";
+                act_btn_run.title = "Εκτέλεση Κώδικα (F5)";
+                act_btn_run.classList.remove("active");
+            }
+            
+            // Ενημέρωση Status Bar
+            if (status_bar) {
+                status_bar.classList.remove("running");
+            }
+            if (status_env) {
+                status_env.innerHTML = "<i class=\"fa-solid fa-circle-check\"></i> Ready";
+            }
         }
     },
 
@@ -1029,7 +1164,7 @@ const App = {
         }
     },
 
-    // set_workspace_mode changes layout focus between Circuit designing and Python coding
+    // set_workspace_mode changes layout focus between Circuit designing, Python coding, or Split display
     set_workspace_mode(mode) {
         const breadboard_panel = document.getElementById("breadboard-panel");
         const editor_panel = document.getElementById("editor-panel");
@@ -1040,12 +1175,17 @@ const App = {
             breadboard_panel.classList.remove("hidden");
             if (resizer) resizer.classList.add("hidden");
             breadboard_panel.style.flex = "1";
-        } else {
-            // code mode
+        } else if (mode === "code") {
             breadboard_panel.classList.add("hidden");
             editor_panel.classList.remove("hidden");
             if (resizer) resizer.classList.add("hidden");
             editor_panel.style.flex = "1";
+        } else if (mode === "split") {
+            breadboard_panel.classList.remove("hidden");
+            editor_panel.classList.remove("hidden");
+            if (resizer) resizer.classList.remove("hidden");
+            breadboard_panel.style.flex = "0 0 calc(50% - 6px)";
+            editor_panel.style.flex = "0 0 calc(50% - 6px)";
         }
 
         // Notify canvas to resize and fit correctly
@@ -1066,9 +1206,27 @@ const App = {
         if (collapse) {
             sidebar.classList.add("hidden");
             expand_btn.classList.remove("hidden");
+            
+            // Ενημέρωση active κατάστασης στο Activity Bar
+            if (side === "left") {
+                const act_btn = document.getElementById("act-btn-components");
+                if (act_btn) act_btn.classList.remove("active");
+            } else {
+                const act_btn = document.getElementById("act-btn-lessons");
+                if (act_btn) act_btn.classList.remove("active");
+            }
         } else {
             sidebar.classList.remove("hidden");
             expand_btn.classList.add("hidden");
+            
+            // Ενημέρωση active κατάστασης στο Activity Bar
+            if (side === "left") {
+                const act_btn = document.getElementById("act-btn-components");
+                if (act_btn) act_btn.classList.add("active");
+            } else {
+                const act_btn = document.getElementById("act-btn-lessons");
+                if (act_btn) act_btn.classList.add("active");
+            }
         }
 
         // Update main content grid structure
@@ -1104,9 +1262,27 @@ const App = {
         if (collapse) {
             target.classList.add("collapsed");
             expand_btn.classList.remove("hidden");
+            
+            // Ενημέρωση active κατάστασης στο Activity Bar
+            if (panel === "gpio") {
+                const act_btn = document.getElementById("act-btn-gpio");
+                if (act_btn) act_btn.classList.remove("active");
+            } else {
+                const act_btn = document.getElementById("act-btn-terminal");
+                if (act_btn) act_btn.classList.remove("active");
+            }
         } else {
             target.classList.remove("collapsed");
             expand_btn.classList.add("hidden");
+            
+            // Ενημέρωση active κατάστασης στο Activity Bar
+            if (panel === "gpio") {
+                const act_btn = document.getElementById("act-btn-gpio");
+                if (act_btn) act_btn.classList.add("active");
+            } else {
+                const act_btn = document.getElementById("act-btn-terminal");
+                if (act_btn) act_btn.classList.add("active");
+            }
         }
 
         // Check overall footer states

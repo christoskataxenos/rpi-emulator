@@ -25,7 +25,7 @@
     <!-- Monaco Editor Loader από CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.js"></script>
 </head>
-<body class="light-theme">
+<body class="dark-theme">
     <div id="app-container">
         <!-- Κύριο Header της Εφαρμογής -->
         <header id="main-header" class="glass-panel">
@@ -45,6 +45,9 @@
                     </button>
                     <button id="tab-editor" class="tab-btn" title="Επεξεργαστής Κώδικα">
                         <i class="fa-solid fa-code"></i> Κώδικας
+                    </button>
+                    <button id="tab-split" class="tab-btn" title="Διπλή Προβολή (Split)">
+                        <i class="fa-solid fa-columns"></i> Split
                     </button>
                 </div>
 
@@ -74,6 +77,32 @@
 
         <!-- Κύριο Περιεχόμενο της Εφαρμογής -->
         <main id="main-content">
+            <!-- VSCode-like Activity Bar -->
+            <div id="activity-bar" class="glass-panel">
+                <div class="activity-top">
+                    <button id="act-btn-components" class="activity-btn active" title="Εργαλειοθήκη (Εξαρτήματα & Υλικά)">
+                        <i class="fa-solid fa-cubes-stacked"></i>
+                    </button>
+                    <button id="act-btn-lessons" class="activity-btn" title="Εκπαιδευτικά Σενάρια">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </button>
+                    <button id="act-btn-run" class="activity-btn" title="Εκτέλεση Κώδικα (F5)">
+                        <i class="fa-solid fa-play"></i>
+                    </button>
+                    <button id="act-btn-terminal" class="activity-btn" title="Κονσόλα Εξόδου">
+                        <i class="fa-solid fa-terminal"></i>
+                    </button>
+                    <button id="act-btn-gpio" class="activity-btn" title="GPIO Live Monitor">
+                        <i class="fa-solid fa-circle-info"></i>
+                    </button>
+                </div>
+                <div class="activity-bottom">
+                    <button id="act-btn-theme" class="activity-btn" title="Αλλαγή Θέματος (Light/Dark)">
+                        <i class="fa-solid fa-sun"></i>
+                    </button>
+                </div>
+            </div>
+
             <!-- Αριστερή Στήλη: Εργαλειοθήκη Εξαρτημάτων -->
             <aside id="sidebar-left" class="glass-panel">
                 <h2 class="sidebar-title">
@@ -207,8 +236,14 @@
 
                 <!-- Κάτω Μέρος: Monaco Code Editor -->
                 <div id="editor-panel" class="glass-panel">
-                    <div class="panel-header">
-                        <h2><i class="fa-solid fa-code"></i> Επεξεργαστής Κώδικα Python</h2>
+                    <div class="vscode-tabs-container">
+                        <div class="vscode-tabs-list">
+                            <div class="vscode-tab active" id="editor-file-tab">
+                                <i class="fa-brands fa-python file-icon" id="editor-tab-icon"></i>
+                                <span class="file-name" id="editor-tab-filename">main.py</span>
+                                <span class="tab-close"><i class="fa-solid fa-xmark"></i></span>
+                            </div>
+                        </div>
                         <div class="editor-actions">
                             <button id="btn-reset-code" class="btn-icon" title="Επαναφορά αρχικού κώδικα"><i class="fa-solid fa-rotate-left"></i></button>
                         </div>
@@ -289,6 +324,35 @@
              <button id="btn-expand-gpio" class="collapsed-expand-btn footer-btn hidden" title="Εμφάνιση GPIO Monitor"><i class="fa-solid fa-circle-info"></i> GPIO</button>
              <button id="btn-expand-console" class="collapsed-expand-btn footer-btn hidden" title="Εμφάνιση Κονσόλας"><i class="fa-solid fa-terminal"></i> Console</button>
          </div>
+
+         <!-- VSCode-like Status Bar -->
+         <footer id="vscode-status-bar" class="glass-panel">
+             <div class="status-left">
+                 <span class="status-item status-indicator success" id="status-env">
+                     <i class="fa-solid fa-circle-check"></i> Ready
+                 </span>
+                 <span class="status-item" id="status-git">
+                     <i class="fa-solid fa-code-branch"></i> main*
+                 </span>
+                 <span class="status-item" id="status-task-info">
+                     Virtual RPi Simulator
+                 </span>
+             </div>
+             <div class="status-right">
+                 <span class="status-item" id="status-ln-col">
+                     Ln 1, Col 1
+                 </span>
+                 <span class="status-item">
+                     Spaces: 4
+                 </span>
+                 <span class="status-item">
+                     UTF-8
+                 </span>
+                 <span class="status-item" id="status-lang">
+                     Python
+                 </span>
+             </div>
+         </footer>
     </div>
 
     <!-- ===== TUTORIAL MODE OVERLAY ===== -->

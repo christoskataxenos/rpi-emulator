@@ -27,12 +27,30 @@ def test_gpio_invalid_pin_edge_case():
     
     state = registry.get_pin_state(invalid_pin)
     assert state == LogicState.HIGH_Z
-    
     try:
         registry.set_pin_state(invalid_pin, LogicState.HIGH)
         registry.set_pin_mode(invalid_pin, "OUTPUT")
     except KeyError:
         pytest.fail("Η εφαρμογή κατέρρευσε με KeyError για μη έγκυρο pin!")
+
+def test_gpio_integer_state_conversion():
+    registry = GPIORegistry()
+    pin = 17
+    
+    # Check that setting an integer value 1 converts it to LogicState.HIGH
+    registry.set_pin_state(pin, 1)
+    assert registry.get_pin_state(pin) == LogicState.HIGH
+    assert registry.get_pin_state(pin) == 1
+    
+    # Check that setting a boolean True converts it to LogicState.HIGH
+    registry.set_pin_state(pin, True)
+    assert registry.get_pin_state(pin) == LogicState.HIGH
+    assert registry.get_pin_state(pin) is LogicState.HIGH
+    
+    # Check that setting an integer value 0 converts it to LogicState.LOW
+    registry.set_pin_state(pin, 0)
+    assert registry.get_pin_state(pin) == LogicState.LOW
+    assert registry.get_pin_state(pin) == 0
 
 # 3. Δοκιμή 4-State Logic (Logisim propagation)
 def test_physics_engine_short_circuit():
@@ -65,6 +83,32 @@ def test_physics_engine_led():
     # Το LED πρέπει να είναι lit
     states = res["component_states"]
     assert states["LED1"] == "lit"
+
+def test_physics_engine_high_to_low_transition_no_short_circuit():
+    circuit = CircuitManager()
+    registry = GPIORegistry()
+    physics = PhysicsEngine(registry)
+    
+    # Setup LED and Resistor circuit
+    circuit.add_component("LED1", "LED")
+    circuit.add_component("R1", "RESISTOR")
+    circuit.add_wire("RPI", "pin11", "R1", "terminal_a")
+    circuit.add_wire("R1", "terminal_b", "LED1", "anode")
+    circuit.add_wire("LED1", "cathode", "RPI", "pin6")
+    
+    registry.set_pin_mode(11, "OUTPUT")
+    
+    # 1. Transition to HIGH
+    registry.set_pin_state(11, LogicState.HIGH)
+    res = physics.solve_circuit(circuit)
+    assert len(res["warnings"]) == 0
+    assert res["component_states"]["LED1"] == "lit"
+    
+    # 2. Transition to LOW
+    registry.set_pin_state(11, LogicState.LOW)
+    res = physics.solve_circuit(circuit)
+    assert len(res["warnings"]) == 0
+    assert res["component_states"]["LED1"] == "off"
 
 
 # 4. Έλεγχος της νέας REST API κλήσης μαζικής φόρτωσης κυκλώματος
