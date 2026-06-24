@@ -1174,6 +1174,89 @@ namespace RpiEmulatorDesktop
             // Προαιρετικό
         }
 
+        // Event Handlers για Zoom & Pan
+        private void CanvasScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (Keyboard.Modifiers == ModifierKeys.Control)
+            {
+                e.Handled = true;
+                double zoomFactor = e.Delta > 0 ? 1.1 : 0.9;
+                double newScaleX = CanvasScaleTransform.ScaleX * zoomFactor;
+                double newScaleY = CanvasScaleTransform.ScaleY * zoomFactor;
+
+                // Περιορισμός Zoom από 0.4x έως 3.0x
+                newScaleX = Math.Max(0.4, Math.Min(3.0, newScaleX));
+                newScaleY = Math.Max(0.4, Math.Min(3.0, newScaleY));
+
+                CanvasScaleTransform.ScaleX = newScaleX;
+                CanvasScaleTransform.ScaleY = newScaleY;
+            }
+        }
+
+        private Point _panStartPoint;
+        private double _scrollStartX;
+        private double _scrollStartY;
+        private bool _isPanning = false;
+
+        private void CanvasScrollViewer_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Middle)
+            {
+                _isPanning = true;
+                _panStartPoint = e.GetPosition(CanvasScrollViewer);
+                _scrollStartX = CanvasScrollViewer.HorizontalOffset;
+                _scrollStartY = CanvasScrollViewer.VerticalOffset;
+                CanvasScrollViewer.CaptureMouse();
+                e.Handled = true;
+            }
+        }
+
+        private void CanvasScrollViewer_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (_isPanning && e.MiddleButton == MouseButtonState.Pressed)
+            {
+                Point currentPoint = e.GetPosition(CanvasScrollViewer);
+                double deltaX = currentPoint.X - _panStartPoint.X;
+                double deltaY = currentPoint.Y - _panStartPoint.Y;
+
+                CanvasScrollViewer.ScrollToHorizontalOffset(_scrollStartX - deltaX);
+                CanvasScrollViewer.ScrollToVerticalOffset(_scrollStartY - deltaY);
+                e.Handled = true;
+            }
+        }
+
+        private void CanvasScrollViewer_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Middle)
+            {
+                _isPanning = false;
+                CanvasScrollViewer.ReleaseMouseCapture();
+                e.Handled = true;
+            }
+        }
+
+        private void ZoomIn_Click(object sender, RoutedEventArgs e)
+        {
+            double newScaleX = CanvasScaleTransform.ScaleX * 1.15;
+            double newScaleY = CanvasScaleTransform.ScaleY * 1.15;
+            CanvasScaleTransform.ScaleX = Math.Max(0.4, Math.Min(3.0, newScaleX));
+            CanvasScaleTransform.ScaleY = Math.Max(0.4, Math.Min(3.0, newScaleY));
+        }
+
+        private void ZoomOut_Click(object sender, RoutedEventArgs e)
+        {
+            double newScaleX = CanvasScaleTransform.ScaleX * 0.85;
+            double newScaleY = CanvasScaleTransform.ScaleY * 0.85;
+            CanvasScaleTransform.ScaleX = Math.Max(0.4, Math.Min(3.0, newScaleX));
+            CanvasScaleTransform.ScaleY = Math.Max(0.4, Math.Min(3.0, newScaleY));
+        }
+
+        private void ZoomReset_Click(object sender, RoutedEventArgs e)
+        {
+            CanvasScaleTransform.ScaleX = 1.0;
+            CanvasScaleTransform.ScaleY = 1.0;
+        }
+
         // Ακύρωση της σχεδίασης καλωδίου
         private void CancelWiring()
         {
@@ -1661,6 +1744,113 @@ namespace RpiEmulatorDesktop
         }
 
         #endregion
+
+        // === MENU EVENT HANDLERS ===
+
+        private void MenuNew_Click(object sender, RoutedEventArgs e)
+        {
+            ClearCircuit_Click(sender, e);
+        }
+
+        private async void MenuLoad_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Circuit Files (*.json, *.rpi)|*.json;*.rpi|All Files (*.*)|*.*",
+                Title = "Άνοιγμα Project"
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    string json = System.IO.File.ReadAllText(openFileDialog.FileName);
+                    var content = new StringContent(json, Encoding.UTF8, "application/json");
+                    var response = await _httpClient.PostAsync("http://127.0.0.1:8000/api/circuit/load", content);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        AppendConsole($"Project loaded successfully from {openFileDialog.SafeFileName}");
+                    }
+                    else
+                    {
+                        AppendConsole("Σφάλμα κατά τη φόρτωση του κυκλώματος από το backend.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AppendConsole($"Σφάλμα ανάγνωσης αρχείου: {ex.Message}");
+                }
+            }
+        }
+
+        private async void MenuSave_Click(object sender, RoutedEventArgs e)
+        {
+            var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Filter = "Circuit Files (*.json)|*.json|RPi Files (*.rpi)|*.rpi",
+                DefaultExt = "json",
+                Title = "Αποθήκευση Project"
+            };
+
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                try
+                {
+                    var response = await _httpClient.GetAsync("http://127.0.0.1:8000/api/circuit");
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string json = await response.Content.ReadAsStringAsync();
+                        System.IO.File.WriteAllText(saveFileDialog.FileName, json);
+                        AppendConsole($"Project saved successfully to {saveFileDialog.SafeFileName}");
+                    }
+                    else
+                    {
+                        AppendConsole("Σφάλμα κατά τη λήψη του κυκλώματος από το backend.");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AppendConsole($"Σφάλμα αποθήκευσης αρχείου: {ex.Message}");
+                }
+            }
+        }
+
+        private void MenuExit_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+
+        private void MenuUndo_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Η αναίρεση δεν υποστηρίζεται ακόμα.", "Αναίρεση", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void MenuClear_Click(object sender, RoutedEventArgs e)
+        {
+            ClearCircuit_Click(sender, e);
+        }
+
+        private void MenuThemeToggle_Click(object sender, RoutedEventArgs e)
+        {
+            var currentBg = this.Background as System.Windows.Media.SolidColorBrush;
+            if (currentBg != null && currentBg.Color.ToString() == "#FF18181B")
+            {
+                this.Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FFF0F0F0"));
+                this.Foreground = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#FF121212"));
+                AppendConsole("Αλλαγή θέματος σε Light Mode.");
+            }
+            else
+            {
+                this.Background = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#18181B"));
+                this.Foreground = new System.Windows.Media.SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#E3E3E3"));
+                AppendConsole("Αλλαγή θέματος σε Dark Mode.");
+            }
+        }
+
+        private void MenuAbout_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBox.Show("Virtual Raspberry Pi Educational Simulator\nΈκδοση 1.0\n\nΜια εκπαιδευτική εφαρμογή για την προσομοίωση κυκλωμάτων Raspberry Pi.", "Πληροφορίες", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
 
     // Κλάση αναπαράστασης του σεναρίου για το ListBox

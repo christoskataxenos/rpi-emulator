@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="Virtual Raspberry Pi Educational Simulator" Height="800" Width="1200"
         MinHeight="600" MinWidth="900"
-        Background="#1E1E1E" Foreground="#E3E3E3"
+        Background="#18181B" Foreground="#E3E3E3"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResizeWithGrip">
     
@@ -77,7 +77,40 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="10">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top" Background="#18181B" Foreground="#E3E3E3" Padding="5,2">
+            <Menu.Resources>
+                <Style TargetType="MenuItem">
+                    <Setter Property="Foreground" Value="#E3E3E3"/>
+                    <Setter Property="Background" Value="#18181B"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#3E3E42"/>
+                            <Setter Property="Foreground" Value="#FFFFFF"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Menu.Resources>
+            <MenuItem Header="Αρχείο">
+                <MenuItem Header="Νέο Project" Click="MenuNew_Click"/>
+                <MenuItem Header="Άνοιγμα Project..." Click="MenuLoad_Click"/>
+                <MenuItem Header="Αποθήκευση Project..." Click="MenuSave_Click"/>
+                <Separator Background="#3F3F46"/>
+                <MenuItem Header="Έξοδος" Click="MenuExit_Click"/>
+            </MenuItem>
+            <MenuItem Header="Επεξεργασία">
+                <MenuItem Header="Αναίρεση" Click="MenuUndo_Click"/>
+                <MenuItem Header="Καθαρισμός Κυκλώματος" Click="MenuClear_Click"/>
+            </MenuItem>
+            <MenuItem Header="Προβολή">
+                <MenuItem Header="Εναλλαγή Θέματος" Click="MenuThemeToggle_Click"/>
+            </MenuItem>
+            <MenuItem Header="Βοήθεια">
+                <MenuItem Header="Περί..." Click="MenuAbout_Click"/>
+            </MenuItem>
+        </Menu>
+
+        <Grid Margin="10">
         <Grid.ColumnDefinitions>
             <!-- 1. Αριστερή Στήλη: Σενάρια & Οδηγίες -->
             <ColumnDefinition Width="280" MinWidth="180"/>
@@ -137,17 +170,19 @@
         <!-- ================= ΜΕΣΑΙΑ ΣΤΗΛΗ ================= -->
         <Grid Grid.Column="2" Margin="5,0,5,0">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="2.3*"/>
-                <ColumnDefinition Width="1.7*"/>
+                <ColumnDefinition Width="2.3*" MinWidth="200"/>
+                <ColumnDefinition Width="5"/>
+                <ColumnDefinition Width="1.7*" MinWidth="200"/>
             </Grid.ColumnDefinitions>
 
             <!-- Αριστερό Μέρος: Editor & Console -->
             <Grid Grid.Column="0" Margin="0,0,5,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="*" MinHeight="100"/>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="180"/>
+                    <RowDefinition Height="5"/>
+                    <RowDefinition Height="180" MinHeight="80"/>
                 </Grid.RowDefinitions>
 
                 <!-- Header & Buttons -->
@@ -177,8 +212,13 @@
                 <!-- Console Header -->
                 <TextBlock Grid.Row="2" Text="ΚΟΝΣΟΛΑ ΕΞΟΔΟΥ" Style="{StaticResource PanelHeaderStyle}" Margin="0,15,0,5"/>
 
+                <!-- Splitter Editor-Console -->
+                <GridSplitter Grid.Row="3" Height="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                              Background="#3F3F46" ShowsPreview="False"
+                              ResizeDirection="Rows" ResizeBehavior="PreviousAndNext"/>
+
                 <!-- Output Console -->
-                <Border Grid.Row="3" BorderBrush="#3F3F46" BorderThickness="1" CornerRadius="4" Background="#121212">
+                <Border Grid.Row="4" BorderBrush="#3F3F46" BorderThickness="1" CornerRadius="4" Background="#121212">
                     <TextBox x:Name="ConsoleOutput" IsReadOnly="True" AcceptsReturn="True"
                              FontFamily="Consolas" FontSize="12" 
                              Background="Transparent" Foreground="#00FF00" 
@@ -187,8 +227,13 @@
                 </Border>
             </Grid>
 
+            <!-- Splitter μεταξύ Editor και Canvas -->
+            <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                          Background="#3F3F46" ShowsPreview="False"
+                          ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"/>
+
             <!-- Δεξί Μέρος: Καμβάς Σχεδίασης & Λίστα Εξαρτημάτων -->
-            <Grid Grid.Column="1" Margin="10,0,0,0">
+            <Grid Grid.Column="2" Margin="10,0,0,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
@@ -265,6 +310,11 @@
                                     <Button Content="+ Resistor" Style="{StaticResource ModernButtonStyle}" FontSize="10" Click="AddResistor_Click" Margin="2"/>
                                     <Button Content="+ Button" Style="{StaticResource ModernButtonStyle}" FontSize="10" Click="AddButton_Click" Margin="2"/>
                                     <Button Content="+ Buzzer" Style="{StaticResource ModernButtonStyle}" FontSize="10" Click="AddBuzzer_Click" Margin="2"/>
+                                    <Button Content="+ DHT11" Style="{StaticResource ModernButtonStyle}" FontSize="10" Click="AddDht11_Click" Margin="2"/>
+                                    <Button Content="+ PIR" Style="{StaticResource ModernButtonStyle}" FontSize="10" Click="AddPir_Click" Margin="2"/>
+                                    <Button Content="+ LDR" Style="{StaticResource ModernButtonStyle}" FontSize="10" Click="AddLdr_Click" Margin="2"/>
+                                    <Button Content="+ HC-SR04" Style="{StaticResource ModernButtonStyle}" FontSize="10" Click="AddUltrasonic_Click" Margin="2"/>
+                                    <Button Content="+ Pot" Style="{StaticResource ModernButtonStyle}" FontSize="10" Click="AddPotentiometer_Click" Margin="2"/>
                                     
                                     <Separator Width="1" Height="15" Margin="5,0" Background="#3F3F46"/>
                                     
@@ -279,15 +329,33 @@
                                     </ComboBox>
 
                                     <Button Content="Clear" Style="{StaticResource ModernButtonStyle}" FontSize="10" Click="ClearCircuit_Click" Margin="10,0,2,0"/>
+                                    
+                                    <Separator Width="1" Height="15" Margin="5,0" Background="#3F3F46"/>
+                                    <Button Content="🔍+" Style="{StaticResource ModernButtonStyle}" FontSize="10" Click="ZoomIn_Click" Margin="2" ToolTip="Zoom In"/>
+                                    <Button Content="🔍-" Style="{StaticResource ModernButtonStyle}" FontSize="10" Click="ZoomOut_Click" Margin="2" ToolTip="Zoom Out"/>
+                                    <Button Content="↺ Reset" Style="{StaticResource ModernButtonStyle}" FontSize="10" Click="ZoomReset_Click" Margin="2" ToolTip="Reset Zoom"/>
                                 </WrapPanel>
                             </Border>
 
                             <!-- Καμβάς Σχεδίασης -->
                             <Border Grid.Row="1" Background="#161616" ClipToBounds="True">
-                                <Canvas x:Name="DesignCanvas" Background="Transparent" ClipToBounds="True"
-                                        MouseDown="DesignCanvas_MouseDown" 
-                                        MouseMove="DesignCanvas_MouseMove"
-                                        MouseUp="DesignCanvas_MouseUp">
+                                <ScrollViewer x:Name="CanvasScrollViewer" 
+                                              HorizontalScrollBarVisibility="Auto" 
+                                              VerticalScrollBarVisibility="Auto"
+                                              Background="Transparent"
+                                              PreviewMouseWheel="CanvasScrollViewer_PreviewMouseWheel"
+                                              MouseDown="CanvasScrollViewer_MouseDown"
+                                              MouseMove="CanvasScrollViewer_MouseMove"
+                                              MouseUp="CanvasScrollViewer_MouseUp">
+                                    <Canvas x:Name="DesignCanvas" Width="1000" Height="750" Background="Transparent" ClipToBounds="True"
+                                            MouseDown="DesignCanvas_MouseDown" 
+                                            MouseMove="DesignCanvas_MouseMove"
+                                            MouseUp="DesignCanvas_MouseUp">
+                                        <Canvas.LayoutTransform>
+                                            <TransformGroup>
+                                                <ScaleTransform x:Name="CanvasScaleTransform" ScaleX="1.0" ScaleY="1.0"/>
+                                            </TransformGroup>
+                                        </Canvas.LayoutTransform>
                                     
                                     <!-- Σταθερή αναπαράσταση RPi Board -->
                                     <Border Canvas.Left="15" Canvas.Top="20" Background="#1D5C2C" BorderBrush="#0D3C14" BorderThickness="2" Width="65" Height="370" CornerRadius="6">
@@ -675,7 +743,8 @@
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
 
-                                </Canvas>
+                                    </Canvas>
+                                </ScrollViewer>
                             </Border>
                         </Grid>
                     </TabItem>
@@ -870,47 +939,143 @@
                                                     </Grid.Style>
                                                 </Grid>
 
-                                                <!-- Info Text -->
-                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="3,0">
-                                                    <TextBlock FontWeight="Bold" FontSize="11" Foreground="#F2F2F7">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="Text" Value="{Binding Id}"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Type}" Value="LED">
-                                                                        <Setter Property="Text" Value="{Binding Id, StringFormat='LED: \{0\}'}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Type}" Value="BUTTON">
-                                                                        <Setter Property="Text" Value="{Binding Id, StringFormat='Button: \{0\}'}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Type}" Value="BUZZER">
-                                                                        <Setter Property="Text" Value="{Binding Id, StringFormat='Buzzer: \{0\}'}"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Type}" Value="RESISTOR">
-                                                                        <Setter Property="Text" Value="{Binding Id, StringFormat='Resistor: \{0\}'}"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                    <TextBlock Text="{Binding DisplayState}" FontSize="9" Foreground="#A0A0A0" Margin="0,1,0,0"/>
-                                                </StackPanel>
+                                                 <!-- Info Text & Sensor Controls -->
+                                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0">
+                                                     <TextBlock FontWeight="Bold" FontSize="11" Foreground="#F2F2F7">
+                                                         <TextBlock.Style>
+                                                             <Style TargetType="TextBlock">
+                                                                 <Setter Property="Text" Value="{Binding Id}"/>
+                                                                 <Style.Triggers>
+                                                                     <DataTrigger Binding="{Binding Type}" Value="LED">
+                                                                         <Setter Property="Text" Value="{Binding Id, StringFormat='LED: \{0\}'}"/>
+                                                                     </DataTrigger>
+                                                                     <DataTrigger Binding="{Binding Type}" Value="BUTTON">
+                                                                         <Setter Property="Text" Value="{Binding Id, StringFormat='Button: \{0\}'}"/>
+                                                                     </DataTrigger>
+                                                                     <DataTrigger Binding="{Binding Type}" Value="BUZZER">
+                                                                         <Setter Property="Text" Value="{Binding Id, StringFormat='Buzzer: \{0\}'}"/>
+                                                                     </DataTrigger>
+                                                                     <DataTrigger Binding="{Binding Type}" Value="RESISTOR">
+                                                                         <Setter Property="Text" Value="{Binding Id, StringFormat='Resistor: \{0\}'}"/>
+                                                                     </DataTrigger>
+                                                                     <DataTrigger Binding="{Binding Type}" Value="DHT11">
+                                                                         <Setter Property="Text" Value="{Binding Id, StringFormat='DHT11: \{0\}'}"/>
+                                                                     </DataTrigger>
+                                                                     <DataTrigger Binding="{Binding Type}" Value="PIR">
+                                                                         <Setter Property="Text" Value="{Binding Id, StringFormat='PIR: \{0\}'}"/>
+                                                                     </DataTrigger>
+                                                                     <DataTrigger Binding="{Binding Type}" Value="LDR">
+                                                                         <Setter Property="Text" Value="{Binding Id, StringFormat='LDR: \{0\}'}"/>
+                                                                     </DataTrigger>
+                                                                     <DataTrigger Binding="{Binding Type}" Value="POTENTIOMETER">
+                                                                         <Setter Property="Text" Value="{Binding Id, StringFormat='Potentiometer: \{0\}'}"/>
+                                                                     </DataTrigger>
+                                                                     <DataTrigger Binding="{Binding Type}" Value="ULTRASONIC">
+                                                                         <Setter Property="Text" Value="{Binding Id, StringFormat='HC-SR04: \{0\}'}"/>
+                                                                     </DataTrigger>
+                                                                 </Style.Triggers>
+                                                             </Style>
+                                                         </TextBlock.Style>
+                                                     </TextBlock>
+                                                     <TextBlock Text="{Binding DisplayState}" FontSize="9" Foreground="#A0A0A0" Margin="0,1,0,0"/>
 
-                                                <!-- Press Button for Interactive Simulation -->
-                                                <Button Grid.Column="2" Content="Press" FontSize="9" Width="42" Height="20" Padding="1" VerticalAlignment="Center"
-                                                        PreviewMouseDown="CompButton_PreviewMouseDown"
-                                                        PreviewMouseUp="CompButton_PreviewMouseUp">
-                                                    <Button.Style>
-                                                        <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
-                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Type}" Value="BUTTON">
-                                                                    <Setter Property="Visibility" Value="Visible"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Button.Style>
-                                                </Button>
+                                                     <!-- Interactive Sliders for Sensors -->
+                                                     <StackPanel Margin="0,5,0,0">
+                                                         <StackPanel.Style>
+                                                             <Style TargetType="StackPanel">
+                                                                 <Setter Property="Visibility" Value="Collapsed"/>
+                                                                 <Style.Triggers>
+                                                                     <DataTrigger Binding="{Binding Type}" Value="DHT11">
+                                                                         <Setter Property="Visibility" Value="Visible"/>
+                                                                     </DataTrigger>
+                                                                 </Style.Triggers>
+                                                             </Style>
+                                                         </StackPanel.Style>
+                                                         <TextBlock Text="Θερμοκρασία (°C):" FontSize="9" Foreground="#A0A0A0"/>
+                                                         <Slider Minimum="0" Maximum="50" Value="{Binding SensorValue, Mode=TwoWay}" ValueChanged="DhtTempSlider_ValueChanged" Height="18"/>
+                                                         <TextBlock Text="Υγρασία (%):" FontSize="9" Foreground="#A0A0A0" Margin="0,3,0,0"/>
+                                                         <Slider Minimum="0" Maximum="100" Value="{Binding SensorValue2, Mode=TwoWay}" ValueChanged="DhtHumSlider_ValueChanged" Height="18"/>
+                                                     </StackPanel>
+
+                                                     <StackPanel Margin="0,5,0,0">
+                                                         <StackPanel.Style>
+                                                             <Style TargetType="StackPanel">
+                                                                 <Setter Property="Visibility" Value="Collapsed"/>
+                                                                 <Style.Triggers>
+                                                                     <DataTrigger Binding="{Binding Type}" Value="LDR">
+                                                                         <Setter Property="Visibility" Value="Visible"/>
+                                                                     </DataTrigger>
+                                                                 </Style.Triggers>
+                                                             </Style>
+                                                         </StackPanel.Style>
+                                                         <TextBlock Text="Φωτεινότητα (%):" FontSize="9" Foreground="#A0A0A0"/>
+                                                         <Slider Minimum="0" Maximum="100" Value="{Binding SensorValue, Mode=TwoWay}" ValueChanged="LdrSlider_ValueChanged" Height="18"/>
+                                                     </StackPanel>
+
+                                                     <StackPanel Margin="0,5,0,0">
+                                                         <StackPanel.Style>
+                                                             <Style TargetType="StackPanel">
+                                                                 <Setter Property="Visibility" Value="Collapsed"/>
+                                                                 <Style.Triggers>
+                                                                     <DataTrigger Binding="{Binding Type}" Value="POTENTIOMETER">
+                                                                         <Setter Property="Visibility" Value="Visible"/>
+                                                                     </DataTrigger>
+                                                                 </Style.Triggers>
+                                                             </Style>
+                                                         </StackPanel.Style>
+                                                         <TextBlock Text="Θέση Knob (%):" FontSize="9" Foreground="#A0A0A0"/>
+                                                         <Slider Minimum="0" Maximum="100" Value="{Binding SensorValue, Mode=TwoWay}" ValueChanged="PotSlider_ValueChanged" Height="18"/>
+                                                     </StackPanel>
+
+                                                     <StackPanel Margin="0,5,0,0">
+                                                         <StackPanel.Style>
+                                                             <Style TargetType="StackPanel">
+                                                                 <Setter Property="Visibility" Value="Collapsed"/>
+                                                                 <Style.Triggers>
+                                                                     <DataTrigger Binding="{Binding Type}" Value="ULTRASONIC">
+                                                                         <Setter Property="Visibility" Value="Visible"/>
+                                                                     </DataTrigger>
+                                                                 </Style.Triggers>
+                                                             </Style>
+                                                         </StackPanel.Style>
+                                                         <TextBlock Text="Απόσταση:" FontSize="9" Foreground="#A0A0A0"/>
+                                                         <Slider Minimum="0" Maximum="100" Value="{Binding SensorValue, Mode=TwoWay}" ValueChanged="UltrasonicSlider_ValueChanged" Height="18"/>
+                                                     </StackPanel>
+                                                 </StackPanel>
+
+                                                 <!-- Press Button for Interactive Simulation -->
+                                                 <Button Grid.Column="2" Content="Press" FontSize="9" Width="42" Height="20" Padding="1" VerticalAlignment="Center"
+                                                         PreviewMouseDown="CompButton_PreviewMouseDown"
+                                                         PreviewMouseUp="CompButton_PreviewMouseUp">
+                                                     <Button.Style>
+                                                         <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                                             <Setter Property="Visibility" Value="Collapsed"/>
+                                                             <Style.Triggers>
+                                                                 <DataTrigger Binding="{Binding Type}" Value="BUTTON">
+                                                                     <Setter Property="Visibility" Value="Visible"/>
+                                                                 </DataTrigger>
+                                                             </Style.Triggers>
+                                                         </Style>
+                                                     </Button.Style>
+                                                 </Button>
+
+                                                 <!-- PIR Trigger Button -->
+                                                 <Button Grid.Column="2" Content="Κίνηση" FontSize="9" Width="55" Height="20" Padding="1" VerticalAlignment="Center" Click="PirToggle_Click">
+                                                     <Button.Style>
+                                                         <Style TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+                                                             <Setter Property="Visibility" Value="Collapsed"/>
+                                                             <Style.Triggers>
+                                                                 <DataTrigger Binding="{Binding Type}" Value="PIR">
+                                                                     <Setter Property="Visibility" Value="Visible"/>
+                                                                 </DataTrigger>
+                                                                 <DataTrigger Binding="{Binding IsMotionActive}" Value="True">
+                                                                     <Setter Property="Background" Value="#0A84FF"/>
+                                                                     <Setter Property="Foreground" Value="White"/>
+                                                                 </DataTrigger>
+                                                             </Style.Triggers>
+                                                         </Style>
+                                                     </Button.Style>
+                                                 </Button>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -1059,4 +1224,5 @@
             </Border>
         </Grid>
     </Grid>
+    </DockPanel>
 </Window>
