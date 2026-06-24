@@ -1,12 +1,12 @@
 # Raspberry Pi Educational Emulator Suite
 
-Ένας ολοκληρωμένος, διαδραστικός και εκπαιδευτικός εξομοιωτής Raspberry Pi GPIO, ο οποίος επιτρέπει σε μαθητές και χομπίστες να σχεδιάζουν κυκλώματα, να συνδέουν εξαρτήματα (LEDs, αντιστάσεις, αισθητήρες) και να τα προγραμματίζουν σε **Python** ή **C/C++** — εξ ολοκλήρου σε περιβάλλον εξομοίωσης, χωρίς την ανάγκη για πραγματικό hardware.
+An integrated, interactive, and educational Raspberry Pi GPIO emulator, which allows students and hobbyists to design circuits, connect components (LEDs, resistors, sensors) and program them in **Python** or **C/C++** — entirely in an emulated environment, without the need for actual hardware.
 
 ---
 
-## 🚀 Αρχιτεκτονική & Νέο Desktop Client (.NET WPF)
+## 🚀 Architecture & New Desktop Client (.NET WPF)
 
-Η εφαρμογή έχει αναβαθμιστεί ριζικά. Η παλιά υλοποίηση desktop με PyQt6 αντικαταστάθηκε από μια **native desktop εφαρμογή σε .NET WPF (C#)**, προσφέροντας βέλτιστη απόδοση στα Windows, native drag-and-drop καμβά σχεδίασης και αυτόματη διαχείριση (supervision) του FastAPI backend server.
+The application has been radically upgraded. The old desktop implementation with PyQt6 has been replaced by a **native desktop application in .NET WPF (C#)**, offering optimal performance on Windows, a native drag-and-drop design canvas, and automatic management (supervision) of the FastAPI backend server.
 
 ```
 ┌────────────────────────────────────────────────────────┐
@@ -26,95 +26,95 @@
 
 ---
 
-## ✨ Κύρια Χαρακτηριστικά
+## ✨ Main Features
 
 ### 🖥️ Native Client (.NET WPF)
-- **Visual Design Canvas**: Σχεδιασμός κυκλωμάτων με drag-and-drop εξαρτημάτων. Δημιουργία καλωδιώσεων (wiring) κάνοντας κλικ στα terminals των εξαρτημάτων και στα pins του RPi.
-- **Interactive 40-Pin RPi Matrix**: Δυναμικό grid που απεικονίζει σε πραγματικό χρόνο την κατάσταση (INPUT/OUTPUT/PWM), το pull-up/pull-down configuration και τις λογικές τιμές (HIGH/LOW) κάθε pin.
-- **Real-time Console Output**: Άμεση ανακατεύθυνση του `stdout` και `stderr` από τον κώδικα που εκτελείται στο panel της κονσόλας με χρωματική κωδικοποίηση.
-- **Automatic Process Supervision**: Η WPF εφαρμογή ελέγχει αν η θύρα `8000` είναι ελεύθερη, εκκινεί αυτόματα το FastAPI backend (uvicorn) στο παρασκήνιο και το τερματίζει με ασφάλεια κατά το κλείσιμο.
-- **Warning Banner**: Δυναμική προειδοποίηση στο UI σε περίπτωση βραχυκυκλώματος ή υπερέντασης (overcurrent) στα LEDs, προστατεύοντας την "εικονική" πλακέτα.
+- **Visual Design Canvas**: Circuit design with drag-and-drop components. Wire creation by clicking on component terminals and RPi pins.
+- **Interactive 40-Pin RPi Matrix**: A dynamic grid displaying in real-time the state (INPUT/OUTPUT/PWM), the pull-up/pull-down configuration, and the logic values (HIGH/LOW) of each pin.
+- **Real-time Console Output**: Direct redirection of `stdout` and `stderr` from the running code to the console panel with color coding.
+- **Automatic Process Supervision**: The WPF application checks if port `8000` is free, automatically starts the FastAPI backend (uvicorn) in the background, and terminates it safely upon closing.
+- **Warning Banner**: A dynamic warning in the UI in case of a short circuit or overcurrent in LEDs, protecting the "virtual" board.
 
-### 🔌 C/C++ Transpiler (Μεταφραστής C σε Python)
-- **Arduino/STM32-like HAL support**: Το backend ενσωματώνει έναν έξυπνο transpiler (`backend/sandbox/transpiler.py`). Αν ο χρήστης γράψει κώδικα C/C++ (π.χ. με δομή `setup()` και `loop()`, `pinMode()`, `digitalWrite()`), το σύστημα τον μεταφράζει αυτόματα σε Python κώδικα που εκτελείται πάνω στα GPIO shims.
-- **Σενάριο C**: Περιλαμβάνεται έτοιμο εργαστήριο (`scenarios/07_dsd_blink_c`) με starter κώδικα C για άμεση δοκιμή της λειτουργίας.
+### 🔌 C/C++ Transpiler (C to Python Translator)
+- **Arduino/STM32-like HAL support**: The backend integrates a smart transpiler (`backend/sandbox/transpiler.py`). If the user writes C/C++ code (e.g. with a `setup()` and `loop()`, `pinMode()`, `digitalWrite()` structure), the system automatically translates it into Python code running on top of the GPIO shims.
+- **C Scenario**: A ready-to-use laboratory (`scenarios/07_dsd_blink_c`) is included with C starter code for immediate testing.
 
-### 🔒 Ασφαλής & Σταθερός Code Executor (Sandbox Freeze Fix)
-- **Uvicorn Reload Protection**: Ο κώδικας του μαθητή εκτελείται πλέον σε έναν απομονωμένο προσωρινό κατάλογο του συστήματος (`tempfile.gettempdir()`) αντί για τον φάκελο εργασίας του project. Αυτό αποτρέπει το uvicorn watchdog από το να προκαλεί συνεχόμενα restarts και παγώματα (freezes) του backend.
-- **Real-time WebSockets**: Τα shims στέλνουν άμεσα τις καταστάσεις τους στο backend, το οποίο με τη σειρά του τις εκπέμπει μέσω WebSockets στο WPF UI.
+### 🔒 Secure & Stable Code Executor (Sandbox Freeze Fix)
+- **Uvicorn Reload Protection**: Student code now runs in an isolated temporary system directory (`tempfile.gettempdir()`) instead of the project's working folder. This prevents the uvicorn watchdog from causing continuous backend restarts and freezes.
+- **Real-time WebSockets**: The shims immediately send their states to the backend, which in turn broadcasts them via WebSockets to the WPF UI.
 
-### 🌡️ Εμπλουτισμένη Βιβλιοθήκη Εξαρτημάτων & Αισθητήρων
-- **Βασικά Εξαρτήματα**: LEDs (κόκκινο, πράσινο, κίτρινο), Αντιστάσεις (330Ω, 10kΩ), Push Buttons, Buzzers.
-- **Αισθητήρες (Sensors)**: DHT11 (Θερμοκρασία/Υγρασία), PIR (Ανιχνευτής Κίνησης), LDR (Φωτοαντιστάτης), HC-SR04 (Υπερήχων).
-- **Αναλογικό Ποτενσιόμετρο**: Επιτρέπει τον έλεγχο αναλογικών σημάτων.
-- **Interactive UI Sliders**: Κάνοντας κλικ στους αισθητήρες, ανοίγει μενού με sliders για τη ρύθμιση φυσικών τιμών (π.χ. θερμοκρασία, απόσταση σε cm, φωτεινότητα) σε πραγματικό χρόνο.
+### 🌡️ Rich Library of Components & Sensors
+- **Basic Components**: LEDs (red, green, yellow), Resistors (330Ω, 10kΩ), Push Buttons, Buzzers.
+- **Sensors**: DHT11 (Temperature/Humidity), PIR (Motion Detector), LDR (Light-dependent resistor / Photoresistor), HC-SR04 (Ultrasonic).
+- **Analog Potentiometer**: Allows control of analog signals.
+- **Interactive UI Sliders**: Clicking on sensors opens a menu with sliders to adjust physical values (e.g. temperature, distance in cm, brightness) in real-time.
 
 ### 📚 Tutorial Mode & Project Management
-- **Scenario System**: Έτοιμα εκπαιδευτικά σενάρια με οδηγίες, στόχους, διαγράμματα σύνδεσης και διαδραστική λίστα ελέγχου (checkboxes) με progress bar.
-- **Save/Load (.rpi)**: Εξαγωγή και εισαγωγή ολόκληρου του workspace (κύκλωμα, καλώδια και κώδικας) σε ένα ενιαίο αρχείο `.rpi` για εύκολη αποθήκευση της προόδου.
+- **Scenario System**: Ready educational scenarios with instructions, goals, wiring diagrams, and an interactive checklist (checkboxes) with a progress bar.
+- **Save/Load (.rpi)**: Export and import of the entire workspace (circuit, wires, and code) into a single `.rpi` file for easy saving of progress.
 
 ---
 
-## 🛠️ Δομή του Project
+## 🛠️ Project Structure
 
 ```
 rpi-emulator/
 ├── backend/                  # FastAPI server, GPIO shims & Sandbox
 │   ├── main.py               # API Endpoints (REST & WebSockets)
 │   ├── sandbox/              
-│   │   ├── executor.py       # Εκτελεστής κώδικα (αποφυγή uvicorn reload)
-│   │   └── transpiler.py     # Transpiler από C σε Python
+│   │   ├── executor.py       # Code executor (prevents uvicorn reload)
+│   │   └── transpiler.py     # C to Python transpiler
 │   ├── shims/                # GPIO Mocked Libraries (RPi.GPIO, gpiozero, dht)
 │   └── simulator/            
-│       ├── circuit.py        # Διαχείριση εξαρτημάτων & συνδέσεων
-│       ├── gpio_state.py     # Registry καταστάσεων των pins
-│       └── physics.py        # Κινητήρας φυσικής & Ohm's Law
+│       ├── circuit.py        # Component & wiring management
+│       ├── gpio_state.py     # Pin state registry
+│       └── physics.py        # Physics engine & Ohm's Law
 ├── desktop/                  # .NET WPF Desktop App (C#)
-│   ├── MainWindow.xaml       # UI Διεπαφή (Canvas, Editor, Pins Grid)
+│   ├── MainWindow.xaml       # UI Interface (Canvas, Editor, Pins Grid)
 │   ├── MainWindow.xaml.cs    # Logic & Backend Connection
-│   ├── CircuitComponent.cs   # Data Model Εξαρτημάτων
-│   ├── GpioPin.cs            # Data Model GPIO Pins
-│   └── VisualWire.cs         # Data Model Καλωδίων
+│   ├── CircuitComponent.cs   # Component Data Model
+│   ├── GpioPin.cs            # GPIO Pins Data Model
+│   └── VisualWire.cs         # Wire Data Model
 ├── frontend/                 # Web Client Frontend (HTML/CSS/JS - Option A)
-├── scenarios/                # Εκπαιδευτικά σενάρια (starter.py, circuit.json, README.md)
-└── tests/                    # Unit και integration tests
+├── scenarios/                # Educational scenarios (starter.py, circuit.json, README.md)
+└── tests/                    # Unit and integration tests
 ```
 
 ---
 
-## 🚀 Οδηγίες Εγκατάστασης & Εκτέλεσης
+## 🚀 Installation & Running Instructions
 
-### Προαπαιτούμενα
-1. **Python 3.10+** (εγκατεστημένη στο PATH) — [Λήψη Python](https://www.python.org/downloads/)
-2. **.NET Runtime / SDK** (.NET 8.0+ για την εκτέλεση της WPF εφαρμογής) — [Λήψη .NET](https://dotnet.microsoft.com/download)
+### Prerequisites
+1. **Python 3.10+** (added to PATH) — [Download Python](https://www.python.org/downloads/)
+2. **.NET Runtime / SDK** (.NET 8.0+ to run the WPF application) — [Download .NET](https://dotnet.microsoft.com/download)
 
-### 1. Εγκατάσταση Εξαρτήσεων Backend
-Ανοίξτε ένα τερματικό και εγκαταστήστε τα Python πακέτα:
+### 1. Install Backend Dependencies
+Open a terminal and install the Python packages:
 ```bash
 pip install -r backend/requirements.txt
 ```
 
-### 2. Εκτέλεση της Desktop Εφαρμογής (WPF)
-- **Μέσω Visual Studio / dotnet CLI**:
-  Μεταβείτε στον κατάλογο `desktop` και εκτελέστε:
+### 2. Run the Desktop Application (WPF)
+- **Via Visual Studio / dotnet CLI**:
+  Navigate to the `desktop` directory and run:
   ```bash
   dotnet run --project desktop/RpiEmulatorDesktop.csproj
   ```
-  *(Η WPF εφαρμογή θα εντοπίσει αυτόματα ότι το backend δεν τρέχει και θα το εκκινήσει στη θύρα 8000).*
+  *(The WPF application will automatically detect if the backend is not running and start it on port 8000).*
 
-### 3. Εναλλακτική Εκτέλεση (Web Client στο Browser)
-Αν θέλετε να χρησιμοποιήσετε την browser έκδοση:
-1. Εκκινήστε χειροκίνητα το backend:
+### 3. Alternative Execution (Web Client in Browser)
+If you want to use the browser version:
+1. Start the backend manually:
    ```bash
    uvicorn backend.main:app --reload --port 8000
    ```
-2. Ανοίξτε το αρχείο `frontend/index.html` στον browser σας ή επισκεφθείτε τη διεύθυνση [http://localhost:8000](http://localhost:8000).
+2. Open the `frontend/index.html` file in your browser or visit [http://localhost:8000](http://localhost:8000).
 
 ---
 
-## 🧪 Εκτέλεση Tests
+## 🧪 Running Tests
 
-Για να επιβεβαιώσετε ότι όλα λειτουργούν σωστά (shims, transpiler, physics engine):
+To verify that everything works correctly (shims, transpiler, physics engine):
 ```powershell
 # Windows PowerShell
 $env:PYTHONPATH="backend/shims;."
